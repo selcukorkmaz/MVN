@@ -1,0 +1,16 @@
+citHeader("To cite MVN in publications use:")
+
+citEntry(entry="article",
+  title  = "MVN: An R Package for Assessing Multivariate Normality.",
+  author = personList(as.person("Selcuk Korkmaz"), 
+                             as.person("Dincer Goksuluk"),
+			     as.person("Gokmen Zararsiz")),
+  journal = "The R Journal",
+  year = "2014",
+  volume = "6",
+  number = "2",
+  pages = "151--162",
+  url = "https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf",
+  textVersion = paste("Korkmaz S, Goksuluk D, Zararsiz G.",
+                      "MVN: An R Package for Assessing Multivariate Normality.",
+                      "The R Journal. 2014 6(2):151-162."))

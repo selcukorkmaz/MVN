@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1519367097435.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "292|31|334|0|\n764|22|927|4|\n931|29|939|6|\n941|30|948|6|\n950|32|961|6|\n1041|37|1070|6|\n1072|40|1081|6|\n1083|42|1091|6|\n1094|46|1120|6|\n1123|35|1127|6|\n",
+    "hash" : "0",
+    "id" : "3940E2B9",
+    "lastKnownWriteTime" : 1519371408,
+    "last_content_update" : 1519371408217,
+    "path" : "~/Desktop/MVN/R/mvn.R",
+    "project_path" : "R/mvn.R",
+    "properties" : {
+        "cursorPosition" : "718,73",
+        "scrollLine" : "709"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

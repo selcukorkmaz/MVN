@@ -1,0 +1,171 @@
+tr[K[KR CMD install MVN_5.0.tar.gz[8@check --as-cran[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[10PMVN_5.0.tar.gzbuild --compact-vignettes=gs+qpdf MVN[15Pinstall MVN_5.0.tar.gzbuild --compact-vignettes=gs+qpdf MVN
+* checking for file ‘MVN/DESCRIPTION’ ... OK
+* preparing ‘MVN’:
+* checking DESCRIPTION meta-information ... OK
+* installing the package to build vignettes
+* creating vignettes ... OK
+* compacting vignettes and other PDF files
+    compacted ‘MVN.pdf’ from 582Kb to 296Kb
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+* building ‘MVN_5.0.tar.gz’
+
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ R CMD build --compact-vignettes=gs+qpdf MVN
+* checking for file ‘MVN/DESCRIPTION’ ... OK
+* preparing ‘MVN’:
+* checking DESCRIPTION meta-information ... OK
+* installing the package to build vignettes
+* creating vignettes ... OK
+* compacting vignettes and other PDF files
+    compacted ‘MVN.pdf’ from 582Kb to 296Kb
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+* building ‘MVN_5.0.tar.gz’
+
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ R CMD build --compact-vignettes=gs+qpdf MVN
+* checking for file ‘MVN/DESCRIPTION’ ... OK
+* preparing ‘MVN’:
+* checking DESCRIPTION meta-information ... OK
+* installing the package to build vignettes
+* creating vignettes ... OK
+* compacting vignettes and other PDF files
+    compacted ‘MVN.pdf’ from 582Kb to 296Kb
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+* building ‘MVN_5.0.tar.gz’
+
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ R CMD build --compact-vignettes=gs+qpdf MVN[15Pinstall MVN_5.0.tar.gz[8@check --as-cran[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[10PMVN_5.0.tar.gz
+* using log directory ‘/Users/selcukkorkmaz/Desktop/MVN.Rcheck’
+* using R version 3.4.3 (2017-11-30)
+* using platform: x86_64-apple-darwin15.6.0 (64-bit)
+* using session charset: UTF-8
+* checking for file ‘MVN/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘MVN’ version ‘5.0’
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘MVN’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking ‘build’ directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking sizes of PDF files under ‘inst/doc’ ... OK
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
+* checking examples ... OK
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes in ‘inst/doc’ ... OK
+* checking running R code from vignettes ...
+   ‘MVN.Rnw’ using ‘UTF-8’ ... OK
+ NONE
+* checking re-building of vignette outputs ... OK
+* checking PDF version of manual ... OK
+* DONE
+
+Status: OK
+
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ R CMD check MVN_5.0.tar.gzbuild --compact-vignettes=gs+qpdf MVN[15Pinstall MVN_5.0.tar.gz[8@check --as-cran[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C
+* using log directory ‘/Users/selcukkorkmaz/Desktop/MVN.Rcheck’
+* using R version 3.4.3 (2017-11-30)
+* using platform: x86_64-apple-darwin15.6.0 (64-bit)
+* using session charset: UTF-8
+* using option ‘--as-cran’
+* checking for file ‘MVN/DESCRIPTION’ ... OK
+* checking extension type ... Package
+* this is package ‘MVN’ version ‘5.0’
+* checking CRAN incoming feasibility ... Note_to_CRAN_maintainers
+Maintainer: ‘Selcuk Korkmaz <selcukorkmaz@gmail.com>’
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘MVN’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking ‘build’ directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking use of S3 registration ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking sizes of PDF files under ‘inst/doc’ ... OK
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
+* checking examples ... OK
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes in ‘inst/doc’ ... OK
+* checking re-building of vignette outputs ... OK
+* checking PDF version of manual ... OK
+* DONE
+
+Status: OK
+
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ R CMD check --as-cran MVN_5.0.tar.gz[10PMVN_5.0.tar.gzbuild --compact-vignettes=gs+qpdf MVN[15Pinstall MVN_5.0.tar.gz[8@check --as-cran[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[10PMVN_5.0.tar.gzbuild --compact-vignettes=gs+qpdf MVN[15Pinstall MVN_5.0.tar.gz
+* installing to library ‘/Library/Frameworks/R.framework/Versions/3.4/Resources/library’
+* installing *source* package ‘MVN’ ...
+** R
+** inst
+** preparing package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded
+* DONE (MVN)
+]0;~/DesktopSelcuk-MacBook-Pro-2:Desktop selcukkorkmaz$ 

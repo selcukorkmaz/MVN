@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1519326425066.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "762C8006",
+    "lastKnownWriteTime" : 1519326435,
+    "last_content_update" : 1519326435533,
+    "path" : "~/Desktop/MVN/vignettes/MVN.Rnw",
+    "project_path" : "vignettes/MVN.Rnw",
+    "properties" : {
+        "cursorPosition" : "26,61",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "sweave"
+}
