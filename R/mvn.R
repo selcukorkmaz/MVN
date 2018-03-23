@@ -1,4 +1,4 @@
-mardia <- function(data, cov = TRUE){
+mardia <- function(data, cov = TRUE, tol = 1e-25){
 
   dataframe=as.data.frame(data)
   dname <- deparse(substitute(data))
@@ -16,7 +16,7 @@ mardia <- function(data, cov = TRUE){
   else {
     S <- cov(data)
   }
-  D <- data %*% solve(S) %*% t(data)
+  D <- data %*% solve(S, tol = tol) %*% t(data)
   g1p <- sum(D^3)/n^2
   g2p <- sum(diag((D^2)))/n
   df <- p * (p + 1) * (p + 2)/6
@@ -54,7 +54,7 @@ mardia <- function(data, cov = TRUE){
     result = rbind.data.frame(resultSkewness, resultKurtosis, MVNresult)
 }
 
-hz <- function(data, cov = TRUE){
+hz <- function(data, cov = TRUE, tol = 1e-25){
 
   dataframe=as.data.frame(data)
   dname <- deparse(substitute(data))
@@ -73,9 +73,9 @@ hz <- function(data, cov = TRUE){
 
   dif <- scale(data, scale = FALSE)
 
-  Dj <- diag(dif%*%solve(S)%*%t(dif))  #squared-Mahalanobis' distances
+  Dj <- diag(dif%*%solve(S, tol = tol)%*%t(dif))  #squared-Mahalanobis' distances
 
-  Y <- data%*%solve(S)%*%t(data)
+  Y <- data%*%solve(S, tol = tol)%*%t(data)
 
 
   Djk <- - 2*t(Y) + matrix(diag(t(Y)))%*%matrix(c(rep(1,n)),1,n) + matrix(c(rep(1,n)),n,1)%*%diag(t(Y))
@@ -114,7 +114,7 @@ hz <- function(data, cov = TRUE){
   result
 }
 
-royston <- function (data) {
+royston <- function (data, tol = 1e-25) {
   if (dim(data)[2] < 2 || is.null(dim(data))) {
     stop("number of variables must be equal or greater than 2")
   }
@@ -194,7 +194,7 @@ royston <- function (data) {
   }
   data <- scale(data, scale = FALSE)
   Sa <- cov(data)
-  D <- data %*% solve(Sa) %*% t(data)
+  D <- data %*% solve(Sa, tol = tol) %*% t(data)
 
   RH <- (edf * (sum(Res)))/p
   pValue <- pchisq(RH, edf, lower.tail = FALSE)
@@ -204,7 +204,6 @@ royston <- function (data) {
   result <- cbind.data.frame(Test = "Royston", H = RH, "p value" = pValue, MVN = MVN)
 
   result
-
 
 }
 
@@ -672,12 +671,14 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 
 #' Multivariate Normality Tests
 #'
-#' Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics
+#' Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests.
 #'
 #' @param data a numeric matrix or data frame
 #' @param subset define a variable name if subset analysis is required
 #' @param mvnTest select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. See details for further information.
 #' @param covariance this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}
+#' @param tol a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}
+#' @param alpha a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.
 #' @param scale if \code{TRUE} scales the colums of data
 #' @param desc a logical argument. If \code{TRUE} calculates descriptive statistics
 #' @param transform select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).
@@ -711,7 +712,41 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #'If \code{mvnTest = "royston"}, it calculate the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
 #'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
+#'If \code{mvnTest = "dh"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+#'
+#'#'If \code{mvnTest = "energy"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
+#'
 #' @author Selcuk Korkmaz, \email{selcukorkmaz@gmail.com}
+#'
+#' @references
+#'
+#'Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014 6(2):151-162. URL \url{https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf}
+#'
+#'Mardia, K. V. (1970), Measures of multivariate skewnees and kurtosis with applications. Biometrika, 57(3):519-530.
+#'
+#'Mardia, K. V. (1974), Applications of some measures of multivariate skewness and kurtosis for testing normality and robustness studies. Sankhy A, 36:115-128.
+#'
+#'Henze, N. and Zirkler, B. (1990), A Class of Invariant Consistent Tests for Multivariate Normality. Commun. Statist.-Theor. Meth., 19(10): 35953618.
+#'
+#'Henze, N. and Wagner, Th. (1997), A New Approach to the BHEP tests for multivariate normality. Journal of Multivariate Analysis, 62:1-23.
+#'
+#'Royston, J.P. (1982). An Extension of Shapiro and Wilks W Test for Normality to Large Samples. Applied Statistics, 31(2):115124.
+#'
+#'Royston, J.P. (1983). Some Techniques for Assessing Multivariate Normality Based on the Shapiro-Wilk W. Applied Statistics, 32(2).
+#'
+#'Royston, J.P. (1992). Approximating the Shapiro-Wilk W-Test for non-normality. Statistics and Computing, 2:117-119.121133.
+#'
+#'Royston, J.P. (1995). Remark AS R94: A remark on Algorithm AS 181: The W test for normality. Applied Statistics, 44:547-551.
+#'
+#'Shapiro, S. and Wilk, M. (1965). An analysis of variance test for normality. Biometrika, 52:591611.
+#'
+#'Doornik, J.A. and Hansen, H. (2008). An Omnibus test for univariate and multivariate normality. Oxford Bulletin of Economics and Statistics 70, 927-939.
+#'
+#'G. J. Szekely and M. L. Rizzo (2013). Energy statistics: A class of statistics based on distances, Journal of Statistical Planning and Inference, http://dx.doi.org/10.1016/j.jspi.2013.03.018
+#'
+#'M. L. Rizzo and G. J. Szekely (2016). Energy Distance, WIRES Computational Statistics, Wiley, Volume 8 Issue 1, 27-38. Available online Dec., 2015, http://dx.doi.org/10.1002/wics.1375.
+#'
+#'G. J. Szekely and M. L. Rizzo (2017). The Energy of Data. The Annual Review of Statistics and Its Application 4:447-79. 10.1146/annurev-statistics-060116-054026
 #'
 #' @examples
 #' result = mvn(data = iris[-4], subset = "Species", mvnTest = "hz",
@@ -754,7 +789,7 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
 #'
 
-mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh", "energy"), covariance = TRUE, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
+mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh", "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
                 univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"), univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
                 showOutliers = FALSE, showNewData = FALSE){
 
@@ -793,19 +828,19 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         if(mvnTest == "mardia"){
 
-          mvnResult = mardia(data, cov = covariance)
+          mvnResult = mardia(data, cov = covariance, tol = tol)
 
         }
 
         if(mvnTest == "hz"){
 
-          mvnResult = hz(data, cov = covariance)
+          mvnResult = hz(data, cov = covariance, tol = tol)
 
         }
 
         if(mvnTest == "royston"){
 
-          mvnResult = royston(data)
+          mvnResult = royston(data, tol = tol)
 
         }
 
@@ -837,7 +872,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         dif <- scale(data, scale = FALSE)
 
-        d <- diag(dif %*% solve(S) %*% t(dif))
+        d <- diag(dif %*% solve(S, tol = tol) %*% t(dif))
 
         r <- rank(d)
 
@@ -913,7 +948,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
     }
 
-       mvOutlierRes = mvOutlier(data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
+       mvOutlierRes = mvOutlier(data, qqplot = TRUE, alpha = alpha, tol = tol, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
        mvOutliers = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE",]
        newData = mvOutlierRes$newData
 
@@ -971,19 +1006,19 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         if(mvnTest == "mardia"){
 
-          mvnResult = lapply(splitData, mardia, cov = covariance)
+          mvnResult = lapply(splitData, mardia, cov = covariance, tol = tol)
 
         }
 
         if(mvnTest == "hz"){
 
-          mvnResult = lapply(splitData, hz, cov = covariance)
+          mvnResult = lapply(splitData, hz, cov = covariance, tol = tol)
 
         }
 
         if(mvnTest == "royston"){
 
-          mvnResult = lapply(splitData, royston)
+          mvnResult = lapply(splitData, royston, tol = tol)
 
         }
 
@@ -1058,7 +1093,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
           dif <- scale(subsetData, scale = FALSE)
 
-          d <- diag(dif %*% solve(S) %*% t(dif))
+          d <- diag(dif %*% solve(S, tol = tol) %*% t(dif))
 
           r <- rank(d)
 

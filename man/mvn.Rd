@@ -5,11 +5,11 @@
 \title{Multivariate Normality Tests}
 \usage{
 mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
-  "energy"), covariance = TRUE, scale = FALSE, desc = TRUE,
-  transform = "none", R = 1000, univariateTest = c("SW", "CVM", "Lillie",
-  "SF", "AD"), univariatePlot = "none", multivariatePlot = "none",
-  multivariateOutlierMethod = "none", showOutliers = FALSE,
-  showNewData = FALSE)
+  "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE,
+  desc = TRUE, transform = "none", R = 1000, univariateTest = c("SW",
+  "CVM", "Lillie", "SF", "AD"), univariatePlot = "none",
+  multivariatePlot = "none", multivariateOutlierMethod = "none",
+  showOutliers = FALSE, showNewData = FALSE)
 }
 \arguments{
 \item{data}{a numeric matrix or data frame}
@@ -19,6 +19,10 @@ mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
 \item{mvnTest}{select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. See details for further information.}
 
 \item{covariance}{this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}}
+
+\item{tol}{a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}}
+
+\item{alpha}{a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.}
 
 \item{scale}{if \code{TRUE} scales the colums of data}
 
@@ -58,7 +62,7 @@ chi-square Q-Q plot for multivariate outliers
 univariate normality plots, Q-Q plot, histogram, box plot, scatter
 }
 \description{
-Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics
+Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests.
 }
 \details{
 If \code{mvnTest = "mardia"}, it calculate the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
@@ -72,6 +76,10 @@ If there are missing values in the data, a listwise deletion will be applied and
 
 If \code{mvnTest = "royston"}, it calculate the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
+
+If \code{mvnTest = "dh"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+
+#'If \code{mvnTest = "energy"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvnTest = "hz",
@@ -98,6 +106,35 @@ result$newData
 # multivariate Q-Q plots for multivariate normality assessment
 # and multivariate outlier detection.
 
+}
+\references{
+Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014 6(2):151-162. URL \url{https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf}
+
+Mardia, K. V. (1970), Measures of multivariate skewnees and kurtosis with applications. Biometrika, 57(3):519-530.
+
+Mardia, K. V. (1974), Applications of some measures of multivariate skewness and kurtosis for testing normality and robustness studies. Sankhy A, 36:115-128.
+
+Henze, N. and Zirkler, B. (1990), A Class of Invariant Consistent Tests for Multivariate Normality. Commun. Statist.-Theor. Meth., 19(10): 35953618.
+
+Henze, N. and Wagner, Th. (1997), A New Approach to the BHEP tests for multivariate normality. Journal of Multivariate Analysis, 62:1-23.
+
+Royston, J.P. (1982). An Extension of Shapiro and Wilks W Test for Normality to Large Samples. Applied Statistics, 31(2):115124.
+
+Royston, J.P. (1983). Some Techniques for Assessing Multivariate Normality Based on the Shapiro-Wilk W. Applied Statistics, 32(2).
+
+Royston, J.P. (1992). Approximating the Shapiro-Wilk W-Test for non-normality. Statistics and Computing, 2:117-119.121133.
+
+Royston, J.P. (1995). Remark AS R94: A remark on Algorithm AS 181: The W test for normality. Applied Statistics, 44:547-551.
+
+Shapiro, S. and Wilk, M. (1965). An analysis of variance test for normality. Biometrika, 52:591611.
+
+Doornik, J.A. and Hansen, H. (2008). An Omnibus test for univariate and multivariate normality. Oxford Bulletin of Economics and Statistics 70, 927-939.
+
+G. J. Szekely and M. L. Rizzo (2013). Energy statistics: A class of statistics based on distances, Journal of Statistical Planning and Inference, http://dx.doi.org/10.1016/j.jspi.2013.03.018
+
+M. L. Rizzo and G. J. Szekely (2016). Energy Distance, WIRES Computational Statistics, Wiley, Volume 8 Issue 1, 27-38. Available online Dec., 2015, http://dx.doi.org/10.1002/wics.1375.
+
+G. J. Szekely and M. L. Rizzo (2017). The Energy of Data. The Annual Review of Statistics and Its Application 4:447-79. 10.1146/annurev-statistics-060116-054026
 }
 \author{
 Selcuk Korkmaz, \email{selcukorkmaz@gmail.com}

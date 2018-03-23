@@ -28,9 +28,17 @@
 \author{Selcuk Korkmaz$^1$, Dincer Goksuluk and Gokmen Zararsiz\\[0.35cm]
 \small{Trakya University, Faculty of Medicine, Department of Biostatistics, Edirne, TURKEY}\\[0cm]\textbf{\small{$^1$selcukorkmaz@gmail.com}}
 }
-\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-01-07)}
+\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-03-22)}
 
 \begin{document}
+
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+concordance=TRUE
+)
+@
+
 
 <<include=FALSE>>=
 library(knitr)
@@ -52,7 +60,7 @@ We previously presented \textbf{MVN} (\url{https://cran.r-project.org/web/packag
 
 
 \section{Implementation of MVN package} \label{sec:mvnRimplement}
-The \textbf{MVN} package contains functions in the \texttt{S3} class to assess multivariate normality. This package is the updated version of the \textbf{MVN} package. The data to be analyzed should be given in the \texttt{"data.frame"} or \texttt{"matrix"} class. In this example, we will work with the famous \texttt{Iris} data set. These data are from a multivariate data set introduced by Fisher (1936) as an application of linear discriminant analysis \cite{fisher:1936}. It is also called Anderson's \texttt{Iris} data set because Edgar Anderson collected the data to measure the morphologic variation of \texttt{Iris} f\mbox{}lowers of three related species \cite{edgarIris:1936}. First of all, the \textbf{MVN} library should be loaded in order to use related functions.
+The \textbf{MVN} package contains functions in the \texttt{S3} class to assess multivariate normality. This package is the updated version of the \textbf{MVN} package \cite{korkmaz:2014}. The data to be analyzed should be given in the \texttt{"data.frame"} or \texttt{"matrix"} class. In this example, we will work with the famous \texttt{Iris} data set. These data are from a multivariate data set introduced by Fisher (1936) as an application of linear discriminant analysis \cite{fisher:1936}. It is also called Anderson's \texttt{Iris} data set because Edgar Anderson collected the data to measure the morphologic variation of \texttt{Iris} f\mbox{}lowers of three related species \cite{edgarIris:1936}. First of all, the \textbf{MVN} library should be loaded in order to use related functions.
 
 
 <<message=F, echo=TRUE>>=
@@ -122,7 +130,7 @@ library(kableExtra)
 
 <<"Mardia test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "mardia")
-result$multivariateNormalityResult
+result$multivariateNormality
 @
 
 This function performs multivariate skewness and kurtosis tests at the same time and combines test results for multivariate normality. If both tests indicates multivariate normality, then data follows a multivariate normality distribution at the 0.05 significance level.
@@ -138,18 +146,43 @@ One may use the \texttt{mvnTest = "hz"} in the \textbf{mvn} function to perform 
 
 <<"Henze-Zirkler test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "hz")
-result$multivariateNormalityResult
+result$multivariateNormality
 @
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level 0.05.
 
 \subsection{Royston's MVN test} \label{subsec:roysRtexttt}
 
 In order to carry out the Royston's test, set \texttt{mvnTest = "royston"} argument in the \textbf{mvn} function as follows:
 
-<<"Royston test", message=FALSE, echo=FALSE>>=
+<<"Royston test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "royston")
-result$multivariateNormalityResult
+result$multivariateNormality
 @
 
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level 0.05.
+
+\subsection{Doornik-Hansen's MVN test} \label{subsec:dhRtexttt}
+
+In order to carry out the Doornik-Hansen's test, set \texttt{mvnTest = "dh"} argument in the \textbf{mvn} function as follows:
+
+<<"Doornik-Hansen test", message=FALSE, echo=TRUE>>=
+result <- mvn(data = setosa, mvnTest = "dh")
+result$multivariateNormality
+@
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level 0.05.
+
+\subsection{Energy test} \label{subsec:energyRtexttt}
+
+In order to carry out the Doornik-Hansen's test, set \texttt{mvnTest = "energy"} argument in the \textbf{mvn} function as follows:
+
+<<"Energy test", message=FALSE, echo=TRUE>>=
+result <- mvn(data = setosa, mvnTest = "energy")
+result$multivariateNormality
+@
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level 0.05.
 
 \subsection{Chi-square Q-Q plot}
 
@@ -233,6 +266,8 @@ setosa3 <- iris[1:50, 1:3]
 mard <- mvn(setosa3, mvnTest = "mardia")
 hz <- mvn(setosa3, mvnTest = "hz")
 roys <- mvn(setosa3, mvnTest = "royston")
+dh <- mvn(setosa3, mvnTest = "dh")
+en <- mvn(setosa3, mvnTest = "en")
 @
 
 
@@ -247,6 +282,8 @@ roys <- mvn(setosa3, mvnTest = "royston")
       \phantom{M}{\small{Kurtosis}} & \Sexpr{formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[2],digits=3, format="f")} & \Sexpr{formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[2],digits=3, format="f")} \\
       Henze-Zirkler & \Sexpr{formatC(hz$multivariateNormality$HZ,digits=3, format="f")} & \Sexpr{formatC(hz$multivariateNormality$`p value`, digits=3, format="f")} \\
       Royston & \Sexpr{formatC(roys$multivariateNormality$H,digits=3, format="f")} & \Sexpr{formatC(roys$multivariateNormality$`p value`,digits=3, format="f")} \\
+      Doornik-Hansen & \Sexpr{formatC(dh$multivariateNormality$E,digits=3, format="f")} & \Sexpr{formatC(dh$multivariateNormality$`p value`,digits=3, format="f")} \\
+      Energy & \Sexpr{formatC(en$multivariateNormality$Statistic,digits=3, format="f")} & \Sexpr{formatC(en$multivariateNormality$`p value`,digits=3, format="f")} \\
       \bottomrule
     \end{tabular}
       \caption{MVN test results (\texttt{setosa} without \texttt{Petal.Width}).} \label{tbl:setosa}
@@ -312,6 +349,8 @@ setosa2 <- iris[1:50, 1:2]
 mard <- mvn(setosa2, mvnTest = "mardia")
 hz <- mvn(setosa2, mvnTest = "hz")
 roys <- mvn(setosa2, mvnTest = "royston")
+dh <- mvn(setosa2, mvnTest = "dh")
+en <- mvn(setosa2, mvnTest = "en")
 @
 
 %\renewcommand{\arraystretch}{1.05}
@@ -327,6 +366,8 @@ roys <- mvn(setosa2, mvnTest = "royston")
       \phantom{M}{\small{Kurtosis}} & \Sexpr{formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[2],digits=3, format="f")} & \Sexpr{formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[2],digits=3, format="f")} \\
       Henze-Zirkler & \Sexpr{formatC(hz$multivariateNormality$HZ,digits=3, format="f")} & \Sexpr{formatC(hz$multivariateNormality$`p value`, digits=3, format="f")} \\
       Royston & \Sexpr{formatC(roys$multivariateNormality$H,digits=3, format="f")} & \Sexpr{formatC(roys$multivariateNormality$`p value`,digits=3, format="f")} \\
+      Doornik-Hansen & \Sexpr{formatC(dh$multivariateNormality$E,digits=3, format="f")} & \Sexpr{formatC(dh$multivariateNormality$`p value`,digits=3, format="f")} \\
+      Energy & \Sexpr{formatC(en$multivariateNormality$Statistic,digits=3, format="f")} & \Sexpr{formatC(en$multivariateNormality$`p value`,digits=3, format="f")} \\
       \bottomrule
     \end{tabular}
       \caption{MVN test results (\texttt{setosa} without \texttt{Petal.Width}).} \label{tbl:setosa}
@@ -364,35 +405,37 @@ result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "qu
 result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "adj")
 @
 
+
 \begin{figure}[htb]
 % Required Packages (graphicx, caption, subcaption)
 \centering
-	\begin{subfigure}[b]{0.485\textwidth}
-		\centering
-		\scalebox{0.75}{
-<<echo=FALSE, message=FALSE, fig.width=5, fig.height=5>>=
-versicolor <- iris[51:100, 1:3]
-result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "quan")
-@
+\begin{subfigure}[b]{0.485\textwidth}
+\centering
+\scalebox{0.75}{
+  <<echo=FALSE, message=FALSE, fig.width=5, fig.height=5>>=
+    versicolor <- iris[51:100, 1:3]
+    result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "quan")
+    @
 }
-		\caption{Mahalanobis Distance}
-		\label{subfig:mvOutlierQuan}
-	\end{subfigure}%
-	~ 	%add desired spacing between images, e. g. ~, \quad, \qquad etc.
-  		%(or a blank line to force the subfigure onto a new line)
-	\begin{subfigure}[b]{0.485\textwidth}
-		\centering
-		\scalebox{0.75}{
-<<echo=FALSE, message=FALSE, fig.width=5, fig.height=5>>=
-versicolor <- iris[51:100, 1:3]
-result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "adj")
-@
+\caption{Mahalanobis Distance}
+\label{subfig:mvOutlierQuan}
+\end{subfigure}%
+~ 	%add desired spacing between images, e. g. ~, \quad, \qquad etc.
+%(or a blank line to force the subfigure onto a new line)
+\begin{subfigure}[b]{0.485\textwidth}
+\centering
+\scalebox{0.75}{
+  <<echo=FALSE, message=FALSE, fig.width=5, fig.height=5>>=
+    versicolor <- iris[51:100, 1:3]
+    result <- mvn(data = versicolor, mvnTest = "hz", multivariateOutlierMethod = "adj")
+    @
 }
-		\caption{Adjusted-Mahalanobis Distance}
-		\label{subfig:mvOutlierAdjQuan}
-	\end{subfigure}
+\caption{Adjusted-Mahalanobis Distance}
+\label{subfig:mvOutlierAdjQuan}
+\end{subfigure}
 \caption{Multivariate outlier detection.}\label{fig:mvOutlier}
 \end{figure}
+
 
 From Figure \ref{fig:mvOutlier}, Mahalanobis distance declares 2 observations as multivariate outlier whereas adjusted Mahalanobis distance declares none. See \cite{Filzmoser:2005} for further information on multivariate outliers.
 
@@ -414,7 +457,7 @@ According to the Henze-Zirkler's test results, dataset for setosa does not follo
 
 \section{Web interface for the MVN package} \label{sec:webInterface}
 
-The purpose of the package is to provide MVN tests along with graphical approaches for assessing MVN. Moreover, this package offers univariate tests and plots, and multivariate outlier detection for checking MVN assumptions through R. However, using R codes might be challenging for new R users. Therefore, we also developed a user-friendly web application by using \textbf{shiny}\footnote{\url{http://www.rstudio.com/shiny/}} \cite{shiny:2014}. This web-tool, which is an interactive application, has all the features that the \textbf{MVN} package has. It is publicly available through \url{http://opensoft.turcosa.com.tr}.
+The purpose of the package is to provide MVN tests along with graphical approaches for assessing MVN. Moreover, this package offers univariate tests and plots, and multivariate outlier detection for checking MVN assumptions through R. However, using R codes might be challenging for new R users. Therefore, we also developed a user-friendly web application by using \textbf{shiny}\footnote{\url{http://www.rstudio.com/shiny/}} \cite{shiny:2014}. This web-tool, which is an interactive application, has all the features that the \textbf{MVN} package has. It is publicly available through \url{http://www.biosoft.hacettepe.edu.tr/MVN/}.
 
 
 
