@@ -28,7 +28,7 @@
 \author{Selcuk Korkmaz$^1$, Dincer Goksuluk and Gokmen Zararsiz\\[0.35cm]
 \small{Trakya University, Faculty of Medicine, Department of Biostatistics, Edirne, TURKEY}\\[0cm]\textbf{\small{$^1$selcukorkmaz@gmail.com}}
 }
-\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-03-22)}
+\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-05-06)}
 
 \begin{document}
 
@@ -93,9 +93,10 @@ In this section we will introduce our \textbf{mvn} function. This function inclu
 
 <<message=FALSE, echo=TRUE, warning=FALSE, eval=FALSE>>=
 mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
-  "energy"), covariance = TRUE, scale = FALSE, desc = TRUE,
-  transform = "none", R = 1000, univariateTest = c("SW", "CVM", "Lillie",
-  "SF", "AD"), univariatePlot = "none", multivariatePlot = "none",
+  "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5,
+  scale = FALSE, desc = TRUE, transform = "none", R = 1000,
+  univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"),
+  univariatePlot = "none", multivariatePlot = "none",
   multivariateOutlierMethod = "none", showOutliers = FALSE,
   showNewData = FALSE)
 
@@ -104,8 +105,8 @@ mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
 
 <<message=FALSE, echo=FALSE, warning=FALSE, eval=TRUE>>=
   text_tbl <- data.frame(
-  Arguments = c("data", "subset", "mvnTest", "covariance", "scale", "desc", "transform", "R", "univariateTest", "univariatePlot", "multivariatePlot", "multivariateOutlierMethod", "showOutliers", "showNewData"),
-  Definition = c( "a numeric matrix or data frame", "define a variable name if subset analysis is required", "select one of the MVN tests. Type 'mardia' for Mardia's test, 'hz' for Henze-Zirkler's test, 'royston' for Royston's test, 'dh' for Doornik-Hansen's test and energy for E-statistic. See details for further information.", "this option works for 'mardia' and 'royston'. If TRUE covariance matrix is normalized by n, if FALSE it is normalized by n-1", "if TRUE scales the colums of data", "a logical argument. If TRUE calculates descriptive statistics", "select a transformation method to transform univariate marginal via logarithm ('log'), square root ('sqrt') and square ('square')", "number of bootstrap replicates for Energy test, default is 1000", "select one of the univariate normality tests, Shapiro-Wilk ('SW'), Cramer-von Mises ('CVM'), Lilliefors ('Lillie'), Shapiro-Francia ('SF'), Anderson-Darling ('AD')", "select one of the univariate normality plots, Q-Q plot ('qq'), histogram ('histogram'), box plot ('box'), scatter ('scatter')", "'qq' for chi-square Q-Q plot, 'persp' for perspective plot, 'contour' for contour plot", "select multivariate outlier detection method, 'quan' quantile method based on Mahalanobis distance and 'adj' adjusted quantile method based on Mahalanobis distance", "if TRUE prints multivariate outliers", "if TRUE prints new data without outliers"
+  Arguments = c("data", "subset", "mvnTest", "covariance", "tol", "alpha", "scale", "desc", "transform", "R", "univariateTest", "univariatePlot", "multivariatePlot", "multivariateOutlierMethod", "showOutliers", "showNewData"),
+  Definition = c( "a numeric matrix or data frame", "define a variable name if subset analysis is required", "select one of the MVN tests. Type 'mardia' for Mardia's test, 'hz' for Henze-Zirkler's test, 'royston' for Royston's test, 'dh' for Doornik-Hansen's test and energy for E-statistic. See details for further information.", "this option works for 'mardia' and 'royston'. If TRUE covariance matrix is normalized by n, if FALSE it is normalized by n-1", "a numeric tolerance value which isused for inversion of the covariance matrix (default = 1e-25)", "a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.", "if TRUE scales the colums of data", "a logical argument. If TRUE calculates descriptive statistics", "select a transformation method to transform univariate marginal via logarithm ('log'), square root ('sqrt') and square ('square')", "number of bootstrap replicates for Energy test, default is 1000", "select one of the univariate normality tests, Shapiro-Wilk ('SW'), Cramer-von Mises ('CVM'), Lilliefors ('Lillie'), Shapiro-Francia ('SF'), Anderson-Darling ('AD')", "select one of the univariate normality plots, Q-Q plot ('qq'), histogram ('histogram'), box plot ('box'), scatter ('scatter')", "'qq' for chi-square Q-Q plot, 'persp' for perspective plot, 'contour' for contour plot", "select multivariate outlier detection method, 'quan' quantile method based on Mahalanobis distance and 'adj' adjusted quantile method based on Mahalanobis distance", "if TRUE prints multivariate outliers", "if TRUE prints new data without outliers"
   )
   )
 
@@ -161,6 +162,8 @@ result$multivariateNormality
 @
 
 The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level 0.05.
+
+NOTE: Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 
 \subsection{Doornik-Hansen's MVN test} \label{subsec:dhRtexttt}
 
@@ -248,7 +251,7 @@ result <- mvn(data = setosa, mvnTest = "royston", univariatePlot = "histogram")
 \caption{Univariate plots of \texttt{setosa}.} \label{fig:uniQQHist}
 \end{figure}
 
-As seen from Figure \ref{fig:uniQQHist}, \texttt{Petal.Width} has a right-skewed distribution whereas other variables have approximately normal distributions. Thus, we can conclude that problems with multivariate normality arise from the skewed distribution of \texttt{Petal.Width}. In addition to the univariate plots, one can also perform univariate normality tests using the \texttt{univariateTest} argument in the mvn \texttt{function}. It provides several widely used univariate normality tests, including \texttt{"SW"} for Shapiro-Wilk test, \texttt{"CVM"} for Cramer-von Mises test, texttt{"Lillie"} for Lilliefors test,  \texttt{"SF"} for Shapiro-Francia test and  \texttt{"AD"} Anderson-Darling test. For example, the following code chunk is used to perform the Shapiro-Wilk's normality test on each variable and it also displays descriptive statistics including mean, standard deviation, median, minimum, maximum, 25th and 75th percentiles, skewness and kurtosis:
+As seen from Figure \ref{fig:uniQQHist}, \texttt{Petal.Width} has a right-skewed distribution whereas other variables have approximately normal distributions. Thus, we can conclude that problems with multivariate normality arise from the skewed distribution of \texttt{Petal.Width}. In addition to the univariate plots, one can also perform univariate normality tests using the \texttt{univariateTest} argument in the mvn \texttt{function}. It provides several widely used univariate normality tests, including \texttt{"SW"} (do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.) for Shapiro-Wilk test, \texttt{"CVM"} for Cramer-von Mises test, texttt{"Lillie"} for Lilliefors test,  \texttt{"SF"} for Shapiro-Francia test and  \texttt{"AD"} Anderson-Darling test. For example, the following code chunk is used to perform the Shapiro-Wilk's normality test on each variable and it also displays descriptive statistics including mean, standard deviation, median, minimum, maximum, 25th and 75th percentiles, skewness and kurtosis:
 
 <<eval=FALSE, message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "royston", univariateTest = "SW", desc = TRUE)

@@ -675,7 +675,7 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #'
 #' @param data a numeric matrix or data frame
 #' @param subset define a variable name if subset analysis is required
-#' @param mvnTest select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. See details for further information.
+#' @param mvnTest select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. Default is Henze-Zirkler's test \code{"hz"}. See details for further information.
 #' @param covariance this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}
 #' @param tol a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}
 #' @param alpha a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.
@@ -683,7 +683,7 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #' @param desc a logical argument. If \code{TRUE} calculates descriptive statistics
 #' @param transform select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).
 #' @param R number of bootstrap replicates for Energy test, default is 1000.
-#' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"})
+#' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.
 #' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})
 #' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot
 #' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance and \code{"adj"} adjusted quantile method based on Mahalanobis distance
@@ -710,7 +710,7 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
 #'If \code{mvnTest = "royston"}, it calculate the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
-#'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
+#'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 #'
 #'If \code{mvnTest = "dh"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 #'

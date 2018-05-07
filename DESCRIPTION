@@ -1,8 +1,8 @@
 Package: MVN
 Type: Package
 Title: Multivariate Normality Tests
-Version: 5.2
-Date: 2018-03-22
+Version: 5.3
+Date: 2018-05-06
 Authors@R: c(person("Selcuk", "Korkmaz", role = c("aut", "cre"),
                      email = "selcukorkmaz@gmail.com"),
               person("Dincer", "Goksuluk", role = "aut",
