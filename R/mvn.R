@@ -4,24 +4,22 @@ mardia <- function(data, cov = TRUE, tol = 1e-25){
   dname <- deparse(substitute(data))
   data <- data[complete.cases(data),]
   data <- as.matrix(data)
-  n <- dim(data)[1]
-  p <- dim(data)[2]
+  n <- nrow(data)
+  p <- ncol(data)
   data.org <- data
 
   data <- scale(data, scale = FALSE)
 
   if (cov) {
     S <- ((n - 1)/n) * cov(data)
-  }
-  else {
+  }else {
     S <- cov(data)
   }
   D <- data %*% solve(S, tol = tol) %*% t(data)
   g1p <- sum(D^3)/n^2
   g2p <- sum(diag((D^2)))/n
   df <- p * (p + 1) * (p + 2)/6
-  k <- (p + 1) * (n + 1) * (n + 3)/(n * ((n + 1) * (p + 1) -
-                                           6))
+  k = ((p + 1)*(n + 1)*(n + 3))/(n*((n + 1)*(p + 1) - 6))
 
   if(n < 20){
 

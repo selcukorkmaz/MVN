@@ -28,7 +28,7 @@
 \author{Selcuk Korkmaz$^1$, Dincer Goksuluk and Gokmen Zararsiz\\[0.35cm]
 \small{Trakya University, Faculty of Medicine, Department of Biostatistics, Edirne, TURKEY}\\[0cm]\textbf{\small{$^1$selcukorkmaz@gmail.com}}
 }
-\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-05-06)}
+\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2018-06-14)}
 
 \begin{document}
 
