@@ -1,8 +1,8 @@
 Package: MVN
 Type: Package
 Title: Multivariate Normality Tests
-Version: 5.5
-Date: 2018-06-14
+Version: 5.7
+Date: 2019-03-18
 Authors@R: c(person("Selcuk", "Korkmaz", role = c("aut", "cre"),
                      email = "selcukorkmaz@gmail.com"),
               person("Dincer", "Goksuluk", role = "aut",
@@ -12,7 +12,7 @@ Authors@R: c(person("Selcuk", "Korkmaz", role = c("aut", "cre"),
 Author: Selcuk Korkmaz [aut, cre], Dincer Goksuluk [aut], Gokmen Zararsiz [aut]
 Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
 Depends:
-    R (>= 3.3.0)
+    R (>= 3.5.0)
 VignetteBuilder: knitr
 Suggests:
     knitr
@@ -28,7 +28,8 @@ Imports:
     boot,
     energy,
     kableExtra,
-    magrittr
+    magrittr,
+    car
 Collate:
     mvn.R 
     hzTest.R
@@ -36,6 +37,8 @@ Collate:
     roystonTest.R
 Description: Performs multivariate normality tests and graphical approaches and
     implements multivariate outlier detection and univariate normality of marginal
-    distributions through plots and tests (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
+    distributions through plots and tests, and performs multivariate Box-Cox transformation 
+    (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
+Encoding: UTF-8
 License: GPL (>= 2)
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1

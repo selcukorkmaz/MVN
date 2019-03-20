@@ -291,28 +291,29 @@ descriptives <- function(data){
 
   if (is.data.frame(data) || is.matrix(data)){
       varnames = colnames(data)
-      n = apply(data, 2, length)
-      meanRes = apply(data, 2, mean)
-      sdRes = apply(data, 2, sd)
-      medianRes = apply(data, 2, median)
-      minRes = apply(data, 2, min)
-      maxRes = apply(data, 2, max)
-      q1Res = apply(data, 2, quantile)[2,]
-      q3Res = apply(data, 2, quantile)[4,]
-      skewRes = apply(data, 2, psych::skew, type=3)
-      kurtosisRes = apply(data, 2, psych::kurtosi, type=3)
+      dataFull = data[complete.cases(data),]
+      n = apply(dataFull, 2, length)
+      meanRes = apply(dataFull, 2, mean, na.rm = TRUE)
+      sdRes = apply(dataFull, 2, sd, na.rm = TRUE)
+      medianRes = apply(dataFull, 2, median, na.rm = TRUE)
+      minRes = apply(dataFull, 2, min, na.rm = TRUE)
+      maxRes = apply(dataFull, 2, max, na.rm = TRUE)
+      q1Res = apply(dataFull, 2, quantile, na.rm = TRUE)[2,]
+      q3Res = apply(dataFull, 2, quantile, na.rm = TRUE)[4,]
+      skewRes = apply(dataFull, 2, psych::skew, type=3)
+      kurtosisRes = apply(dataFull, 2, psych::kurtosi, type=3)
 
     }else{
 
       varnames = "variable"
       n = length(data)
-      meanRes = mean(data)
-      sdRes = sd(data)
-      medianRes = median(data)
-      minRes = min(data)
-      maxRes = max(data)
-      q1Res = quantile(data)[2]
-      q3Res = quantile(data)[4]
+      meanRes = mean(data, na.rm = TRUE)
+      sdRes = sd(data, na.rm = TRUE)
+      medianRes = median(data, na.rm = TRUE)
+      minRes = min(data, na.rm = TRUE)
+      maxRes = max(data, na.rm = TRUE)
+      q1Res = quantile(data, na.rm = TRUE)[2]
+      q3Res = quantile(data, na.rm = TRUE)[4]
       skewRes = psych::skew(data, type=3)
       kurtosisRes = psych::kurtosi(data, type=3)
 
@@ -334,6 +335,8 @@ descriptives <- function(data){
 uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
   if (!is.data.frame(data) && !is.matrix(data) && !is.numeric(data)) stop(warning('Input must be one of classes \"vector\", \"data frame\" or \"matrix\"'))
   type = match.arg(type)
+
+  data = data[complete.cases(data),]
 
   if (type == "AD") TestName = "Anderson-Darling"
   if (type == "CVM") TestName = "Cramer-von Mises"
@@ -406,6 +409,7 @@ uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
 
 mvnPlot <- function (data,  type = c("persp", "contour"), default = TRUE,
           plotCtrl = c(perspControl(), contourControl()), ...){
+  data = data[complete.cases(data),]
   type <- match.arg(type)
   # if (!(class(object)[1] %in% c("mardia", "hz", "royston")))
   #   stop("Object must be in one of the following classes: \"mardia\", \"hz\", \"royston\" ")
@@ -480,6 +484,7 @@ mvOutlier <- function (data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = c
   if (dim(data)[2] < 2 || is.null(dim(data))) {
     stop("number of variables must be equal or greater than 2")
   }
+  data = data[complete.cases(data),]
   dataframe = as.data.frame(data)
   dname <- deparse(substitute(data))
   method <- match.arg(method)
@@ -602,6 +607,7 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
     stop(warning("Input must be one of classes \"vector\", \"data frame\" or \"matrix\""))
   # type = match.arg(type)
   if (is.data.frame(data) || is.matrix(data)) {
+    data = data[complete.cases(data),]
     data = as.data.frame(data)
     if (nrow(data) < 2)
       stop(warning("Too few number of observations (n < 2)."))
@@ -666,10 +672,46 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
   }
 }
 
+BoxCox <- function(data, type = c("optimal", "rounded")){
+
+  data = data[complete.cases(data),]
+  powerTransformation = summary(powerTransform(data))$result
+
+  if(type == "optimal"){
+
+    lambda = powerTransformation[,1]
+
+  }
+
+  if(type == "rounded"){
+
+    lambda = powerTransformation[,2]
+
+  }
+
+  for(i in 1:length(lambda)){
+
+    if(lambda[[i]] == 0){
+
+      data[i] = log(data[i])
+
+    }else{
+
+      data[i] = data[i]^lambda[[i]]
+
+    }
+  }
+
+  result = list(data, lambda)
+
+  return(result)
+}
+
+
 
 #' Multivariate Normality Tests
 #'
-#' Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests.
+#' Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests, and performs multivariate Box-Cox transformation.
 #'
 #' @param data a numeric matrix or data frame
 #' @param subset define a variable name if subset analysis is required
@@ -685,6 +727,8 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})
 #' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot
 #' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance and \code{"adj"} adjusted quantile method based on Mahalanobis distance
+#' @param bc if \code{TRUE} it applies Box-Cox power transformation
+#' @param bcType select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}
 #' @param showOutliers if \code{TRUE} prints multivariate outliers
 #' @param showNewData if \code{TRUE} prints new data without outliers
 #'
@@ -783,43 +827,56 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
 #' @importFrom MASS kde2d
 #' @importFrom mvoutlier arw
 #' @importFrom psych describe
+#' @importFrom car powerTransform
 #' @importFrom graphics contour persp abline boxplot curve hist legend par plot text
 #' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
 #'
 
 mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh", "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
                 univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"), univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
-                showOutliers = FALSE, showNewData = FALSE){
+                bc = FALSE, bcType = "rounded", showOutliers = FALSE, showNewData = FALSE){
 
   mvnTest <- match.arg(mvnTest)
   univariateTest <- match.arg(univariateTest)
 
+  colnms = colnames(data)
+
+  if(bc && transform != "none"){
+
+    stop("Please select transform = 'none' if you apply Box-Cox transformation or select bc = FALSE and apply one of the transformation method directly, as log, sqrt and square.")
+  }
 
   if(is.null(subset)){
 
+      if(bc){
 
-    if(transform == "log"){
+      result = BoxCox(data, type = bcType)
+      data = result[[1]]
+      BoxCoxPower = result[[2]]
+
+    }
+
+      if(transform == "log"){
 
       data = apply(data,2,log)
 
     }
 
-    if(transform == "sqrt"){
+      if(transform == "sqrt"){
 
       data = apply(data,2,sqrt)
 
     }
 
-    if(transform == "square"){
+      if(transform == "square"){
 
-      data = apply(data,2,function(x){
+        data = apply(data,2,function(x){
 
         return(x^2)
 
       })
 
     }
-
 
 
     if (!(dim(data)[2] < 2 || is.null(dim(data)))){
@@ -895,7 +952,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
       }
 
 
-      }else{mvnResult = "No MVN result. Number of variables is less than 2 "}
+      }else{mvnResult = "No MVN result. Number of variables is less than 2!"}
 
         if(univariateTest == "SW"){
 
@@ -961,6 +1018,32 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
     }else{
 
 
+      if(bc){
+
+        sData = split(data[,!(colnames(data) %in% subset)], data[,subset])
+        comp <- lapply(sData, complete.cases)
+        clean_data <- Map(function(d,c) {d[c,]}, sData, comp)
+        sData <- lapply(sData, function(x) x[complete.cases(x),])
+
+        result = lapply(sData, BoxCox, type = bcType)
+        dataList = list()
+        bcList = list()
+
+        for(i in 1:length(result)){
+
+          dataList[[i]] = result[[i]][[1]]
+          bcList[[i]] = result[[i]][[2]]
+        }
+
+        data = cbind.data.frame(do.call(rbind.data.frame, dataList), data[subset][complete.cases(data),])
+
+        colnames(data) = colnms
+
+
+        BoxCoxPower = bcList
+        names(BoxCoxPower) = names(sData)
+
+      }
 
       if(transform == "log"){
 
@@ -994,11 +1077,9 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
         colnames(data)[dim(data)[2]] = subset
       }
 
-
-      splitData = split(data[,!(colnames(data) %in% subset)], data[,subset])
+      splitData = split(data[,!(colnames(data) %in% subset)], data[subset])
 
       name = names(splitData)
-
 
       if (!(is.null(lapply(splitData, dim)[[1]]))){
 
@@ -1067,7 +1148,6 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
       if(desc){
 
         descs = lapply(splitData, descriptives)
-        descs
 
       }else{descs = NULL}
 
@@ -1076,7 +1156,8 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         for(i in 1:length(name)){
 
-          subsetData = splitData[[i]]
+          subsetData = splitData[[i]][complete.cases(splitData[[i]]),]
+
 
           n <- dim(subsetData)[1]
           p <- dim(subsetData)[2]
@@ -1084,8 +1165,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
           if (covariance) {
             S <- ((n - 1)/n) * cov(subsetData)
-          }
-          else {
+          }else {
             S <- cov(subsetData)
           }
 
@@ -1107,7 +1187,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         for(i in 1:length(name)){
 
-        subsetData = splitData[[i]]
+        subsetData = splitData[[i]][complete.cases(splitData[[i]]),]
 
         mvnPlot(subsetData, type = "persp", default = TRUE,
                 plotCtrl = c(perspControl(), contourControl()), main = paste0("Perspective Plot for ", name[i]))
@@ -1117,7 +1197,8 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
       if (multivariatePlot == "contour") {
 
         for(i in 1:length(name)){
-        subsetData = splitData[[i]]
+
+        subsetData = splitData[[i]][complete.cases(splitData[[i]]),]
 
         mvnPlot(subsetData, type = "contour", default = TRUE,
                 plotCtrl = c(perspControl(), contourControl()), main = paste0("Contour Plot for ", name[i]))
@@ -1142,8 +1223,8 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
 
         for(i in 1:length(name)){
-
-          mvOutlierRes = mvOutlier(splitData[[i]], qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
+          subsetData = splitData[[i]][complete.cases(splitData[[i]]),]
+          mvOutlierRes = mvOutlier(subsetData, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
           mvOutliers[[i]] = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE",]
           newData[[i]] = mvOutlierRes$newData
         }
@@ -1180,6 +1261,12 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
    if (showNewData){
 
     result = c(result, list(newData = newData))
+
+   }
+
+  if (bc){
+
+    result = c(result, list(BoxCoxPowerTransformation = BoxCoxPower))
 
   }
 
