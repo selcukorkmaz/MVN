@@ -28,7 +28,7 @@
 \author{Selcuk Korkmaz$^1$, Dincer Goksuluk and Gokmen Zararsiz\\[0.35cm]
 \small{Trakya University, Faculty of Medicine, Department of Biostatistics, Edirne, TURKEY}\\[0cm]\textbf{\small{$^1$selcukorkmaz@gmail.com}}
 }
-\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2019-03-18)}
+\date{\textbf{MVN} version \Sexpr{packageDescription("MVN")$Version}  (Last revision 2019-09-27)}
 
 \begin{document}
 
@@ -129,7 +129,7 @@ library(kableExtra)
 
 \texttt{mvnTest = "mardia"} argument in the \textbf{mvn} function is used to calculate the Mardia's multivariate skewness and kurtosis coef\mbox{}f\mbox{}icients as well as their corresponding statistical significance. This function can also calculate the corrected version of the skewness coef\mbox{}f\mbox{}icient for small sample size $(n<20)$.
 
-<<"Mardia test", message=FALSE, echo=TRUE>>=
+<<"Mardia_test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "mardia")
 result$multivariateNormality
 @
@@ -145,7 +145,7 @@ tmp <- mvn(data = setosa, mvnTest = "mardia")
 One may use the \texttt{mvnTest = "hz"} in the \textbf{mvn} function to perform the Henze-Zirkler's test.
 
 
-<<"Henze-Zirkler test", message=FALSE, echo=TRUE>>=
+<<"Henze-Zirkler_test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "hz")
 result$multivariateNormality
 @
@@ -156,7 +156,7 @@ The last column indicates whether dataset follows a multivariate normality or no
 
 In order to carry out the Royston's test, set \texttt{mvnTest = "royston"} argument in the \textbf{mvn} function as follows:
 
-<<"Royston test", message=FALSE, echo=TRUE>>=
+<<"Royston_test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "royston")
 result$multivariateNormality
 @
@@ -169,7 +169,7 @@ NOTE: Do not apply Royston's test, if dataset includes more than 5000 cases or l
 
 In order to carry out the Doornik-Hansen's test, set \texttt{mvnTest = "dh"} argument in the \textbf{mvn} function as follows:
 
-<<"Doornik-Hansen test", message=FALSE, echo=TRUE>>=
+<<"Doornik-Hansen_test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "dh")
 result$multivariateNormality
 @
@@ -180,7 +180,7 @@ The last column indicates whether dataset follows a multivariate normality or no
 
 In order to carry out the Doornik-Hansen's test, set \texttt{mvnTest = "energy"} argument in the \textbf{mvn} function as follows:
 
-<<"Energy test", message=FALSE, echo=TRUE>>=
+<<"Energy_test", message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "energy")
 result$multivariateNormality
 @
@@ -255,7 +255,7 @@ As seen from Figure \ref{fig:uniQQHist}, \texttt{Petal.Width} has a right-skewed
 
 <<eval=FALSE, message=FALSE, echo=TRUE>>=
 result <- mvn(data = setosa, mvnTest = "royston", univariateTest = "SW", desc = TRUE)
-result$univariateNormalityResult
+result$univariateNormality
 @
 
 <<SWUnivariate, eval=TRUE, message=FALSE, echo=FALSE>>=

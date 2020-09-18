@@ -726,7 +726,7 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.
 #' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})
 #' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot
-#' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance and \code{"adj"} adjusted quantile method based on Mahalanobis distance
+#' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance
 #' @param bc if \code{TRUE} it applies Box-Cox power transformation
 #' @param bcType select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}
 #' @param showOutliers if \code{TRUE} prints multivariate outliers
@@ -742,21 +742,21 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #' @return univariate normality plots, Q-Q plot, histogram, box plot, scatter
 #'
 #'@details
-#'If \code{mvnTest = "mardia"}, it calculate the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
+#'If \code{mvnTest = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
 #'It can also calculate corrected version of skewness coefficient for small sample size (n< 20).
 #'For multivariate normality, both p-values of skewness and kurtosis statistics should be greater than 0.05.
 #'If sample size less than 20 then p.value.small should be used as significance value of skewness instead of p.value.skew.
 #'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
-#'If \code{mvnTest = "hz"}, it calculate the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
+#'If \code{mvnTest = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
 #'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
-#'If \code{mvnTest = "royston"}, it calculate the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
+#'If \code{mvnTest = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
 #'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 #'
-#'If \code{mvnTest = "dh"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+#'If \code{mvnTest = "dh"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 #'
-#'#'If \code{mvnTest = "energy"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
+#'#'If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
 #'
 #' @author Selcuk Korkmaz, \email{selcukorkmaz@gmail.com}
 #'
@@ -1007,6 +1007,11 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
        mvOutliers = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE",]
        newData = mvOutlierRes$newData
 
+    }else{
+
+      mvOutliers = NULL
+      newData = NULL
+
     }
 
     if(univariatePlot != "none"){
@@ -1224,7 +1229,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         for(i in 1:length(name)){
           subsetData = splitData[[i]][complete.cases(splitData[[i]]),]
-          mvOutlierRes = mvOutlier(subsetData, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
+          mvOutlierRes = mvOutlier(subsetData, qqplot = TRUE, alpha = alpha, tol = tol, method = multivariateOutlierMethod, label = TRUE, position = NULL, offset = 0.5, main = main)
           mvOutliers[[i]] = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE",]
           newData[[i]] = mvOutlierRes$newData
         }
@@ -1232,6 +1237,9 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
         names(mvOutliers) = name
         names(newData) = name
+      }else{
+        mvOutliers = NULL
+        newData = NULL
       }
 
 

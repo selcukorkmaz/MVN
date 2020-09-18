@@ -39,7 +39,7 @@ mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
 
 \item{multivariatePlot}{\code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot}
 
-\item{multivariateOutlierMethod}{select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance and \code{"adj"} adjusted quantile method based on Mahalanobis distance}
+\item{multivariateOutlierMethod}{select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance}
 
 \item{bc}{if \code{TRUE} it applies Box-Cox power transformation}
 
@@ -70,21 +70,21 @@ univariate normality plots, Q-Q plot, histogram, box plot, scatter
 Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests, and performs multivariate Box-Cox transformation.
 }
 \details{
-If \code{mvnTest = "mardia"}, it calculate the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
+If \code{mvnTest = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
 It can also calculate corrected version of skewness coefficient for small sample size (n< 20).
 For multivariate normality, both p-values of skewness and kurtosis statistics should be greater than 0.05.
 If sample size less than 20 then p.value.small should be used as significance value of skewness instead of p.value.skew.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 
-If \code{mvnTest = "hz"}, it calculate the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
+If \code{mvnTest = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 
-If \code{mvnTest = "royston"}, it calculate the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
+If \code{mvnTest = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 
-If \code{mvnTest = "dh"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+If \code{mvnTest = "dh"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 
-#'If \code{mvnTest = "energy"}, it calculate the Doornik-Hansen's multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
+#'If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvnTest = "hz",
