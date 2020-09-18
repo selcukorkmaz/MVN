@@ -332,7 +332,7 @@ descriptives <- function(data){
 
 }
 
-uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
+uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD","KS")){
   if (!is.data.frame(data) && !is.matrix(data) && !is.numeric(data)) stop(warning('Input must be one of classes \"vector\", \"data frame\" or \"matrix\"'))
   type = match.arg(type)
 
@@ -340,9 +340,10 @@ uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
 
   if (type == "AD") TestName = "Anderson-Darling"
   if (type == "CVM") TestName = "Cramer-von Mises"
-  if (type == "Lillie") TestName = "Lilliefors (Kolmogorov-Smirnov)"
+  if (type == "Lillie") TestName = "Lilliefors"
   if (type == "SW") TestName = "Shapiro-Wilk"
   if (type == "SF") TestName = "Shapiro-Francia"
+  if (type == "KS") TestName = "Kolmogorov-Smirnov"
 
   if (is.data.frame(data) || is.matrix(data)){
     varNames = colnames(data)
@@ -366,6 +367,7 @@ uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
       if (type == "Lillie") res2 = apply(data, 2, nortest::lillie.test)
       if (type == "SW") res2 = apply(data, 2, shapiro.test)
       if (type == "SF") res2 = apply(data, 2, nortest::sf.test)
+      if (type == "KS") res2 = apply(data, 2, stats::ks.test,y = "pnorm")
 
       res[, 3:4] = round(plyr::ldply(res2, .fun = function(x)cbind(x$stat, x$p.value))[,-1],4)
 
@@ -391,6 +393,7 @@ uniNorm <- function(data, type = c("SW", "CVM", "Lillie", "SF", "AD")){
     if (type == "Lillie") res = nortest::lillie.test(data)
     if (type == "SW") res = shapiro.test(data)
     if (type == "SF") res = nortest::sf.test(data)
+    if (type == "KS") res = stats::ks.test(data,y="pnorm")
 
     Variable = "variable"
     Statistic = res$statistic
@@ -723,7 +726,7 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #' @param desc a logical argument. If \code{TRUE} calculates descriptive statistics
 #' @param transform select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).
 #' @param R number of bootstrap replicates for Energy test, default is 1000.
-#' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.
+#' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Kolmogorov-Smirnov (\code{"KS"}) Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.
 #' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})
 #' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot
 #' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance
@@ -829,11 +832,11 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #' @importFrom psych describe
 #' @importFrom car powerTransform
 #' @importFrom graphics contour persp abline boxplot curve hist legend par plot text
-#' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
+#' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis ks.test
 #'
 
 mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh", "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
-                univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"), univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
+                univariateTest = c("SW", "CVM", "Lillie", "SF", "AD","KS"), univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
                 bc = FALSE, bcType = "rounded", showOutliers = FALSE, showNewData = FALSE){
 
   mvnTest <- match.arg(mvnTest)
@@ -976,7 +979,13 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
           uniResult = uniNorm(data, type = "SF")
 
-       }
+        }
+
+        if(univariateTest == "KS"){
+
+          uniResult = uniNorm(data, type = "KS")
+
+        }
 
         if(univariateTest == "AD"){
 
@@ -1144,6 +1153,12 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
       }
 
+      if(univariateTest == "KS"){
+
+        uniResult = lapply(splitData, uniNorm, type = "KS")
+
+      }
+
       if(univariateTest == "AD"){
 
         uniResult = lapply(splitData, uniNorm, type = "AD")
@@ -1284,7 +1299,7 @@ mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh"
 
 
 
-mvn.lm <- function(object, test = c("SW", "CVM", "Lillie", "SF", "AD"), plot = c("qq","histogram","box","scatter"),  desc = TRUE){
+mvn.lm <- function(object, test = c("SW", "CVM", "Lillie", "SF", "AD","KS"), plot = c("qq","histogram","box","scatter"),  desc = TRUE){
 
   test<- match.arg(test)
   plot<- match.arg(plot)
@@ -1318,6 +1333,12 @@ mvn.lm <- function(object, test = c("SW", "CVM", "Lillie", "SF", "AD"), plot = c
   if(test == "AD"){
 
     uniResult = uniNorm(data, type = "AD")
+
+  }
+
+  if(test == "KS"){
+
+    uniResult = uniNorm(data, type = "KS")
 
   }
 
