@@ -1,9 +1,9 @@
 {
-    "path" : "~/Documents/GitHub/MVN",
-    "sortOrder" : [
+    "path": "~/Documents/GitHub/MVN/vignettes",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": true
         }
     ]
 }

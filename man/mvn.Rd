@@ -4,30 +4,43 @@
 \alias{mvn}
 \title{Multivariate Normality Tests}
 \usage{
-mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
-  "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5,
-  scale = FALSE, desc = TRUE, transform = "none", R = 1000,
-  univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"),
-  univariatePlot = "none", multivariatePlot = "none",
-  multivariateOutlierMethod = "none", bc = FALSE, bcType = "rounded",
-  showOutliers = FALSE, showNewData = FALSE)
+mvn(
+  data,
+  subset = NULL,
+  mvnTest = "hz",
+  covariance = TRUE,
+  tol = 1e-25,
+  alpha = 0.5,
+  scale = FALSE,
+  desc = TRUE,
+  transform = "none",
+  R = 1000,
+  univariateTest = "AD",
+  univariatePlot = "none",
+  multivariatePlot = "none",
+  multivariateOutlierMethod = "none",
+  bc = FALSE,
+  bcType = "rounded",
+  showOutliers = FALSE,
+  showNewData = FALSE
+)
 }
 \arguments{
-\item{data}{a numeric matrix or data frame}
+\item{data}{a numeric matrix or data frame.}
 
-\item{subset}{define a variable name if subset analysis is required}
+\item{subset}{define a variable name if subset analysis is required.}
 
 \item{mvnTest}{select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. Default is Henze-Zirkler's test \code{"hz"}. See details for further information.}
 
-\item{covariance}{this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}}
+\item{covariance}{this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}.}
 
-\item{tol}{a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}}
+\item{tol}{a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}.}
 
 \item{alpha}{a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.}
 
-\item{scale}{if \code{TRUE} scales the colums of data}
+\item{scale}{if \code{TRUE} scales the colums of data.}
 
-\item{desc}{a logical argument. If \code{TRUE} calculates descriptive statistics}
+\item{desc}{a logical argument. If \code{TRUE} calculates descriptive statistics.}
 
 \item{transform}{select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).}
 
@@ -35,36 +48,36 @@ mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
 
 \item{univariateTest}{select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.}
 
-\item{univariatePlot}{select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})}
+\item{univariatePlot}{select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"}).}
 
-\item{multivariatePlot}{\code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot}
+\item{multivariatePlot}{\code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot.}
 
-\item{multivariateOutlierMethod}{select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance}
+\item{multivariateOutlierMethod}{select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance.}
 
-\item{bc}{if \code{TRUE} it applies Box-Cox power transformation}
+\item{bc}{if \code{TRUE} it applies Box-Cox power transformation.}
 
-\item{bcType}{select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}}
+\item{bcType}{select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}.}
 
-\item{showOutliers}{if \code{TRUE} prints multivariate outliers}
+\item{showOutliers}{if \code{TRUE} prints multivariate outliers.}
 
-\item{showNewData}{if \code{TRUE} prints new data without outliers}
+\item{showNewData}{if \code{TRUE} prints new data without outliers.}
 }
 \value{
-\code{multivariateNormality} corresponding multivariate normality test statistics and p-value
+\code{multivariateNormality} corresponding multivariate normality test statistics and p-value.
 
-\code{univariateNormality} corresponding univariate normality test statistics and p-value
+\code{univariateNormality} corresponding univariate normality test statistics and p-value.
 
-\code{Descriptives} Descriptive statistics
+\code{Descriptives} Descriptive statistics.
 
-\code{multivariateOutliers} multivariate outliers
+\code{multivariateOutliers} multivariate outliers.
 
-\code{newData} new data without multivariate outliers
+\code{newData} new data without multivariate outliers.
 
-multivariate normality plots, Q-Q, perspective or contour
+multivariate normality plots, Q-Q, perspective or contour.
 
-chi-square Q-Q plot for multivariate outliers
+chi-square Q-Q plot for multivariate outliers.
 
-univariate normality plots, Q-Q plot, histogram, box plot, scatter
+univariate normality plots, Q-Q plot, histogram, box plot, scatter.
 }
 \description{
 Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests, and performs multivariate Box-Cox transformation.
@@ -84,7 +97,7 @@ If there are missing values in the data, a listwise deletion will be applied and
 
 If \code{mvnTest = "dh"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 
-#'If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
+If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvnTest = "hz",

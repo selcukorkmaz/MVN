@@ -490,7 +490,8 @@ mvOutlier <- function (data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = c
   method <- match.arg(method)
   n <- dim(data)[1]
   p <- dim(data)[2]
-  covr <- covMcd(data, alpha = alpha)
+  set.seed(123)
+  covr <- cov.mcd(data, method = "mcd")
   mah <- mahalanobis(data, center = covr$center, cov = covr$cov,
                      tol = tol)
   d <- mah
@@ -499,7 +500,7 @@ mvOutlier <- function (data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = c
   colnames(out) <- c("Observation", "Mahalanobis Distance",
                      "Outlier")
   if (method == "adj") {
-    crt <- arw(x = data, m0 = covr$center, c0 = covr$cov,
+    crt <- ARW(x = data, m0 = covr$center, c0 = covr$cov,
                alpha = 0.025)$cn
     for (i in 1:n) {
       {
@@ -708,38 +709,76 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 }
 
 
+ARW <- function (x, m0, c0, alpha, pcrit)
+{
+  n <- nrow(x)
+  p <- ncol(x)
+  if (missing(pcrit)) {
+    if (p <= 10)
+      pcrit <- (0.24 - 0.003 * p)/sqrt(n)
+    if (p > 10)
+      pcrit <- (0.252 - 0.0018 * p)/sqrt(n)
+  }
+  if (missing(alpha))
+    delta <- qchisq(0.975, p)
+  else delta <- qchisq(1 - alpha, p)
+  d2 <- mahalanobis(x, m0, c0)
+  d2ord <- sort(d2)
+  dif <- pchisq(d2ord, p) - (0.5:n)/n
+  i <- (d2ord >= delta) & (dif > 0)
+  if (sum(i) == 0)
+    alfan <- 0
+  else alfan <- max(dif[i])
+  if (alfan < pcrit)
+    alfan <- 0
+  if (alfan > 0)
+    cn <- max(d2ord[n - ceiling(n * alfan)], delta)
+  else cn <- Inf
+  w <- d2 < cn
+  if (sum(w) == 0) {
+    m <- m0
+    c <- c0
+  }
+  else {
+    m <- apply(x[w, ], 2, mean)
+    c1 <- as.matrix(x - rep(1, n) %*% t(m))
+    c <- (t(c1 * w) %*% c1)/sum(w)
+  }
+  list(m = m, c = c, cn = cn, w = w)
+}
+
 
 #' Multivariate Normality Tests
 #'
 #' Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests, and performs multivariate Box-Cox transformation.
 #'
-#' @param data a numeric matrix or data frame
-#' @param subset define a variable name if subset analysis is required
+#' @param data a numeric matrix or data frame.
+#' @param subset define a variable name if subset analysis is required.
 #' @param mvnTest select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. Default is Henze-Zirkler's test \code{"hz"}. See details for further information.
-#' @param covariance this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}
-#' @param tol a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}
+#' @param covariance this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}.
+#' @param tol a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}.
 #' @param alpha a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.
-#' @param scale if \code{TRUE} scales the colums of data
-#' @param desc a logical argument. If \code{TRUE} calculates descriptive statistics
+#' @param scale if \code{TRUE} scales the colums of data.
+#' @param desc a logical argument. If \code{TRUE} calculates descriptive statistics.
 #' @param transform select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).
 #' @param R number of bootstrap replicates for Energy test, default is 1000.
 #' @param univariateTest select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.
-#' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"})
-#' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot
-#' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance
-#' @param bc if \code{TRUE} it applies Box-Cox power transformation
-#' @param bcType select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}
-#' @param showOutliers if \code{TRUE} prints multivariate outliers
-#' @param showNewData if \code{TRUE} prints new data without outliers
+#' @param univariatePlot select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"}).
+#' @param multivariatePlot \code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot.
+#' @param multivariateOutlierMethod select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance.
+#' @param bc if \code{TRUE} it applies Box-Cox power transformation.
+#' @param bcType select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}.
+#' @param showOutliers if \code{TRUE} prints multivariate outliers.
+#' @param showNewData if \code{TRUE} prints new data without outliers.
 #'
-#' @return \code{multivariateNormality} corresponding multivariate normality test statistics and p-value
-#' @return \code{univariateNormality} corresponding univariate normality test statistics and p-value
-#' @return \code{Descriptives} Descriptive statistics
-#' @return \code{multivariateOutliers} multivariate outliers
-#' @return \code{newData} new data without multivariate outliers
-#' @return multivariate normality plots, Q-Q, perspective or contour
-#' @return chi-square Q-Q plot for multivariate outliers
-#' @return univariate normality plots, Q-Q plot, histogram, box plot, scatter
+#' @return \code{multivariateNormality} corresponding multivariate normality test statistics and p-value.
+#' @return \code{univariateNormality} corresponding univariate normality test statistics and p-value.
+#' @return \code{Descriptives} Descriptive statistics.
+#' @return \code{multivariateOutliers} multivariate outliers.
+#' @return \code{newData} new data without multivariate outliers.
+#' @return multivariate normality plots, Q-Q, perspective or contour.
+#' @return chi-square Q-Q plot for multivariate outliers.
+#' @return univariate normality plots, Q-Q plot, histogram, box plot, scatter.
 #'
 #'@details
 #'If \code{mvnTest = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
@@ -756,7 +795,7 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #'
 #'If \code{mvnTest = "dh"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 #'
-#'#'If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017)i
+#'If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
 #'
 #' @author Selcuk Korkmaz, \email{selcukorkmaz@gmail.com}
 #'
@@ -816,28 +855,21 @@ BoxCox <- function(data, type = c("optimal", "rounded")){
 #' # and multivariate outlier detection.
 #'
 #' @export
-#' @import magrittr
-#' @import kableExtra
 #' @importFrom energy mvnorm.e
 #' @importFrom boot boot
 #' @importFrom moments kurtosis skewness
 #' @importFrom methods new
 #' @importFrom nortest sf.test cvm.test lillie.test ad.test
-#' @importFrom robustbase covMcd
-#' @importFrom MASS kde2d
-#' @importFrom mvoutlier arw
+#' @importFrom MASS kde2d cov.mcd
 #' @importFrom psych describe
 #' @importFrom car powerTransform
 #' @importFrom graphics contour persp abline boxplot curve hist legend par plot text
 #' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
 #'
 
-mvn <- function(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh", "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
-                univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"), univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
+mvn <- function(data, subset = NULL, mvnTest = "hz", covariance = TRUE, tol = 1e-25, alpha = 0.5, scale = FALSE, desc = TRUE, transform = "none", R = 1000,
+                univariateTest = "AD", univariatePlot = "none",  multivariatePlot = "none", multivariateOutlierMethod = "none",
                 bc = FALSE, bcType = "rounded", showOutliers = FALSE, showNewData = FALSE){
-
-  mvnTest <- match.arg(mvnTest)
-  univariateTest <- match.arg(univariateTest)
 
   colnms = colnames(data)
 

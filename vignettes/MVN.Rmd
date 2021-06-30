@@ -1,0 +1,365 @@
+---
+title: "MVN: An R Package for Assessing Multivariate Normality"
+date: "29 June 2021"
+author:
+- name: Selçuk Korkmaz
+  affiliation: 
+  - Trakya University Faculty of Medicine Department of Biostatistics
+  email: selcukorkmaz@gmail.com
+- name: Dinçer Göksülük
+  affiliation: 
+  - Erciyes University Faculty of Medicine Department of Biostatistics  
+- name: Gökmen Zararsız
+  affiliation: 
+  - Erciyes University Faculty of Medicine Department of Biostatistics  
+  
+package: MVN
+output: 
+  BiocStyle::html_document:
+    toc_float: true
+    
+abstract: >
+
+ We previously presented [MVN](https://CRAN.R-project.org/package=MVN) package to assess multivariate normality. We also published the paper of the package ([Korkmaz et al., 2014](https://journal.r-project.org/archive/2014/RJ-2014-031/RJ-2014-031.pdf)). Now, we present an updated version of the package. This tutorial intended to explain the implementation of the MVN package.
+ 
+vignette: >
+  %\VignetteIndexEntry{MVN: An R Package for Assessing Multivariate Normality}
+  %\VignetteEngine{knitr::rmarkdown}
+    <!--
+  %% \VignetteEngine{knitr::knitr}
+  -->
+  \usepackage[utf8]{inputenc}
+---
+
+```{r style, echo = FALSE, results = 'asis'}
+  BiocStyle::markdown()
+```
+
+```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4, tibble.print_max = 4)
+```
+
+
+# Implementation of MVN package
+
+
+The MVN package contains functions in the S3 class to assess multivariate normality. This package is the updated version of the [MVN](https://CRAN.R-project.org/package=MVN) package [1]. The data to be analyzed should be given in the "data.frame" or "matrix" class. In this example, we will work with the famous Iris data set. These data are from a multivariate data set introduced by Fisher (1936) as an application of linear discriminant analysis [2]. It is also called Anderson’s Iris data set because Edgar Anderson collected the data to measure the morphologic variation of Iris flowers of three related species [3]. First of all, the MVN library should be loaded in order to use related functions.
+
+```{r MVN, message = FALSE}
+# load MVN package
+library(MVN)
+```
+
+Similarly, Iris data can be loaded from the R database by using the following R code:
+
+```{r iris, message = FALSE}
+# load Iris data
+data(iris)
+```
+
+The Iris data set consists of 150 samples from each of the three species of Iris including setosa, virginica and versicolor. For each sample, four variables were measured including the length and width of the sepals and petals, in centimeters.
+
+**Example I:** For simplicity, we will work with a subset of these data which contain only 50 samples of setosa flowers, and check MVN assumption using Mardia’s, Royston’s and Henze-Zirkler’s tests.
+
+```{r setosa, message = FALSE}
+# setosa subset of the Iris data
+setosa <- iris[1:50, 1:4]
+```
+
+
+## The `mvn` function
+
+In this section we will introduce our `mvn` function. This function includes all the arguments to assess multivariate normality through multivariate normality tests, multivariate plots, multivariate outlier detection, univariate normality tests and univariate plots.
+
+```{r mvn, message = FALSE, eval=FALSE}
+mvn(data, subset = NULL, mvnTest = c("mardia", "hz", "royston", "dh",
+  "energy"), covariance = TRUE, tol = 1e-25, alpha = 0.5,
+  scale = FALSE, desc = TRUE, transform = "none", R = 1000,
+  univariateTest = c("SW", "CVM", "Lillie", "SF", "AD"),
+  univariatePlot = "none", multivariatePlot = "none",
+  multivariateOutlierMethod = "none", bc = FALSE, bcType = "rounded",
+  showOutliers = FALSE, showNewData = FALSE)
+```
+
+The arguments and their definitions are given in Table \@ref(tab:table1).
+
+: (\#tab:table1) Arguments of the `mvn` function.
+
+Argument   | Definition
+---- | ---------
+`data` | a numeric matrix or data frame.
+`subset`  | define a variable name if subset analysis is required.
+`mvnTest` | select one of the MVN tests.  Type `mardia` for Mardia’s test,  `hz` for Henze-Zirkler’s test,  `royston` for Royston’s test,  `dh` for Doornik-Hansen’s test,  `energy` for E-statistic.  See details for further information.
+`covariance` | this option works for ’mardia’ and ’royston’.  If `TRUE` covariance matrix is normalized by $n$,  if `FALSE` it is normalized by $n-1$.
+`tol` | a numeric tolerance value which isused for inversion of the covariance matrix (default is $1e-25$).
+`alpha` | a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between $0.5$ and $1$ and the default is $0.5$.
+`scale` | a logical argument. if `TRUE` scales the colums of data.
+`desc` | a logical argument. If `TRUE` calculates descriptive statistics.
+`transform` | select a transformation method to transform univariate marginal via logarithm (``log`), square root (`sqrt`) and square (`square`).
+`R` | number of bootstrap replicates for Energy test, default is $1000$.
+`univariateTest` | select one of the univariate normality tests, Shapiro-Wilk (`SW`), Cramer-von Mises (`CVM`), Lilliefors (`Lillie`), Shapiro-Francia (`SF`), Anderson-Darling (`AD`).
+`univariatePlot` | select one of the univariate normality plots, Q-Q plot (`qq`), histogram (`histogram`), box plot (`box`), scatter (`scatter`).
+`multivariatePlot` | `qq` for chi-square Q-Q plot, `persp` for perspective plot, `contour` for contour plot.
+`multivariateOutlierMethod` | select multivariate outlier detection method, `quan` quantile method based on Mahalanobis distance and `adj` adjusted quantile method based on Mahalanobis distance.
+`bc` | if `TRUE` it applies Box-Cox power transformation.
+`bcType` | select optimal or rounded type of Box-Cox power transformation, only applicable if `bc = TRUE`.
+`showOutliers` | if `TRUE` prints multivariate outliers.
+`showNewData` | if `TRUE` prints new data without outliers.
+
+## Mardia’s MVN test
+
+`mvnTest = "mardia"` argument in the `mvn` function is used to calculate the Mardia’s multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance. This function can also calculate the corrected version of the skewness coefficient for small sample size ($n < 20$).
+
+```{r mardia, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "mardia")
+result$multivariateNormality
+```
+
+This function performs multivariate skewness and kurtosis tests at the same time and combines test results for multivariate normality. If both tests indicates multivariate normality, then data follows a multivariate normality distribution at the $0.05$ significance level.
+
+## Henze-Zirkler’s MVN test
+
+One may use the `mvnTest = "hz"` in the `mvn` function to perform the Henze-Zirkler’s test.
+
+```{r hz, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "hz")
+result$multivariateNormality
+```
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level $0.05$.
+
+## Royston’s MVN test
+
+In order to carry out the Royston’s test, set `mvnTest = "royston"` argument in the `mvn` function as follows:
+
+```{r royston, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "royston")
+result$multivariateNormality
+```
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level $0.05$.
+
+NOTE: Do not apply Royston’s test, if dataset includes more than $5000$ cases or less than $3$ cases, since it depends on Shapiro-Wilk’s test.
+
+## Doornik-Hansen’s MVN test
+
+In order to carry out the Doornik-Hansen’s test, set `mvnTest = "dh"` argument in the `mvn` function as follows:
+
+```{r dh, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "dh")
+result$multivariateNormality
+```
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level $0.05$.
+
+## Energy test
+
+In order to carry out the Energy test, set `mvnTest = "energy"` argument in the `mvn` function as follows:
+
+```{r energy, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "energy")
+result$multivariateNormality
+```
+
+The last column indicates whether dataset follows a multivariate normality or not (i.e, YES or NO) at significance level $0.05$.
+
+
+## Chi-square Q-Q plot
+
+One can clearly see that different MVN tests may come up with different results. MVN assumption was rejected by Henze-Zirkler’s and Royston’s tests; however, it was not rejected by Mardia’s test at a significance level of $0.05$. In such cases, examining MVN plots along with hypothesis tests can be quite useful in order to reach a more reliable decision.
+
+The Q-Q plot, where “Q” stands for quantile, is a widely used graphical approach to evaluate the agreement between two probability distributions. Each axis refers to the quantiles of probability distributions to be compared, where one of the axes indicates theoretical quantiles (hypothesized quantiles) and the other indicates the observed quantiles. If the observed data fit hypothesized distribution, the points in the Q-Q plot will approximately lie on the line y = x.
+ 
+MVN has the ability to create three multivariate plots. One may use the `multivariatePlot = "qq"` option in the `mvn` function to create a chi-square Q-Q plot. We can create this plot for the setosa data set to see whether there are any deviations from multivariate normality. Figure \@ref(fig:qq) shows the chi-square Q-Q plot of the first $50$ rows of Iris data, which are setosa flowers. It can be seen from Figure \@ref(fig:qq) that there are some deviations from the straight line and this indicates possible departures from a multivariate normal distribution.
+
+```{r qq, echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.cap = "Chi-Square Q-Q plot for setosa data set."}
+par(mar=c(4.2,4.1,3,0.2))
+result <- mvn(data = setosa, mvnTest = "royston", multivariatePlot = "qq")
+```
+
+As a result, we can conclude that this data set does not satisfy MVN assumption based on the fact that the two test results are against it and the chi-square Q-Q plot indicates departures from multivariate normal distribution.
+
+## Univariate plots and tests
+
+As noted by several authors [4–6], if data have a multivariate normal distribution, then, each of the variables has a univariate normal distribution; but the opposite does not have to be true. Hence, checking univariate plots and tests could be very useful to diagnose the reason for deviation from MVN. We can check this assumption through `univariatePlot` and `univariateTest` arguments from the `mvn` function. Set univariatePlot argument `qqplot` for Q-Q plots (Figure \@ref(fig:qqUniPlot)), `histogram` for histograms with normal curves (Figure \@ref(fig:histogram)), `box` for box-plots and `scatter` for scatterplot matrices.
+
+```{r qqUniPlot, echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.cap = "Univariate qq-plots for setosa."}
+# create univariate Q-Q plots
+result <- mvn(data = setosa, mvnTest = "royston", univariatePlot = "qqplot")
+
+```
+
+```{r histogram, echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.cap = "Univariate histograms for setosa."}
+# create univariate histograms
+result <- mvn(data = setosa, mvnTest = "royston", univariatePlot = "histogram")
+```
+
+As seen from Figures \@ref(fig:qqUniPlot) and \@ref(fig:histogram), Petal.Width has a right-skewed distribution whereas other variables have approximately normal distributions. Thus, we can conclude that problems with multivariate normality arise from the skewed distribution of Petal.Width. In addition to the univariate plots, one can also perform univariate normality tests using the `univariateTest` argument in the `mvn` function. It provides several widely used univariate normality tests, including `SW` (do not apply Shapiro-Wilk’s test, if dataset includes more than 5000 cases or less than 3 cases.) for Shapiro-Wilk test, `CVM` for Cramer-von Mises test, `Lillie` for Lilliefors test, `SF` for Shapiro-Francia test and `AD` Anderson-Darling test. For example, the following code chunk is used to perform the Shapiro-Wilk’s normality test on each variable and it also displays descriptive statistics including mean, standard deviation, median, minimum, maximum, 25th and 75th percentiles, skewness and kurtosis:
+
+```{r univariateNormality, message = FALSE}
+result <- mvn(data = setosa, mvnTest = "royston",  
+              univariateTest = "SW", desc = TRUE)
+result$univariateNormality
+result$Descriptives
+```
+
+From the above results, we can see that all variables, except **Petal.Width** in the setosa data set, have univariate normal distributions at significance level 0.05. We can now drop **Petal.With** from **setosa** data and recheck the multivariate normality. MVN results are given in Table \@ref(tab:table2).
+
+```{r include=FALSE}
+mard <- mvn(data = setosa[,-4], mvnTest = "mardia")
+hz <- mvn(data = setosa[,-4], mvnTest = "hz")
+roys <- mvn(data = setosa[,-4], mvnTest = "royston")
+dh <- mvn(data = setosa[,-4], mvnTest = "dh")
+en <- mvn(data = setosa[,-4], mvnTest = "energy")
+
+mardiaSkewStat = formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[1],digits=3, format="f")
+mardiaSkewPval = formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[1],digits=3, format="f")
+mardiaKurtStat = formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[2],digits=3, format="f")
+mardiaKurtPval = formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[2],digits=3, format="f")
+hzStat = formatC(hz$multivariateNormality$HZ,digits=3, format="f")
+hzPval = formatC(hz$multivariateNormality$`p value`, digits=3, format="f")
+roysStat = formatC(roys$multivariateNormality$H,digits=3, format="f")
+roysPval = formatC(roys$multivariateNormality$`p value`, digits=3, format="f")
+dhStat = formatC(dh$multivariateNormality$E,digits=3, format="f")
+dhPval = formatC(dh$multivariateNormality$`p value`, digits=3, format="f")
+enStat = formatC(en$multivariateNormality$Statistic,digits=3, format="f")
+enPval = formatC(en$multivariateNormality$`p value`, digits=3, format="f")
+```
+
+: (\#tab:table2) MVN test results (setosa without Petal.Width).
+
+Test | Test Statistic | p-value
+---- | --------- | ---------
+Mardia:Skewness | `r mardiaSkewStat` | `r mardiaSkewPval`
+Mardia:Kurtosis | `r mardiaKurtStat` | `r mardiaKurtPval`
+Henze-Zirkler | `r hzStat` | `r hzPval`
+Royston | `r roysStat` | `r roysPval`
+Doornik-Hansen | `r dhStat` | `r dhPval`
+Energy | `r enStat` | `r enPval`
+
+According to the all tests, except Doornik-Hansen’s, in Table \@ref(tab:table2), setosa without Petal.Width
+has a multivariate normal distribution at significance level 0.05.
+
+**Example II:** Whilst the Q-Q plot is a general approach for assessing MVN in all types of numerical multivariate datasets, perspective and contour plots can only be used for bivariate data. To demonstrate the applicability of these two approaches, we will use a subset of Iris data, named *setosa2*, including the *sepal length* and *sepal width* variables of the setosa species.
+
+```{r setosa2,  message=FALSE}
+setosa2 <- iris[1:50, 1:2] 
+```
+
+## Perspective and contour plots
+
+Univariate normal marginal densities are a necessary but not a sufficient condition for MVN. Hence, in addition to univariate plots, creating perspective and contour plots will be useful. The perspective plot is an extension of the univariate probability distribution curve into a 3·dimensional probability distribution surface related with bivariate distributions. It also gives information about where data are gathered and how two variables are correlated with each other. It consists of three dimensions where two dimensions refer to the values of the two variables and the third dimension, which is likely in univariate cases, is the value of the multivariate normal probability density function. Another alternative graph, which is called the “contour plot”, involves the projection of the perspective plot into a 2·dimensional space and this can be used for checking multivariate normality assumption.
+
+For bivariate normally distributed data, we expect to obtain a three-dimensional bell-shaped graph from the perspective plot. Similarly, in the contour plot, we can observe a similar pattern.
+
+To construct a perspective and contour plot for Example II, we can use the `multivariatePlot` argument in the `mvn` function. In the following codes, we used `multivariatePlot = "persp"` to create perspective plot (Figure \@ref(fig:perspective)). It is also possible to create a contour plot of the data. Contour graphs are very useful since they give information about normality and correlation at the same time. Figure \@ref(fig:contour) shows the contour plot of setosa flowers, when we set `multivariatePlot = "contour"`. As can be seen from the graph, this is simply a top view of the perspective plot where the third dimension is represented with ellipsoid contour lines. From this graph, we can say that there is a positive correlation among the sepal measures of flowers since the contour lines lie around the main diagonal. If the correlation were zero, the contour lines would be circular rather than ellipsoid.
+
+```{r perspective,  message=FALSE, fig.width=5, fig.height=5, fig.cap = "Perspective plot for bivariate setosa2 data set."}
+# perspective plot
+result <- mvn(setosa2, mvnTest = "hz", multivariatePlot = "persp") 
+```
+
+```{r contour,  message=FALSE, fig.width=5, fig.height=5, fig.cap = "Contour plot for bivariate setosa2 data set."}
+# contour plot
+result <- mvn(setosa2, mvnTest = "hz", multivariatePlot = "contour")
+```
+
+Since neither the univariate plots in Figure \@ref(fig:qqUniPlot) and \@ref(fig:histogram) nor the multivariate plots in Figure \@ref(fig:perspective) and \@ref(fig:contour) show any significant deviation from MVN, we can now perform the MVN tests to evaluate the statistical significance of bivariate normal distribution of the setosa2 data set.
+
+All tests, except Doornik-Hansen’s, in Table \@ref(tab:table3) indicate that the data set satisfies bivariate nor- mality assumption at the significance level 0.05. Moreover, the perspective and contour plots are in agreement with the test results and indicate approximate bivariate normality.
+
+Figures \@ref(fig:perspective) and \@ref(fig:contour) were drawn using a pre-defined graphical option by the authors. However, users may change these options by setting function entry to `default = FALSE`. If the default is FALSE, optional arguments from the plot, `persp` and `contour` functions may be introduced to the corresponding graphs.
+
+
+
+```{r include=FALSE}
+setosa2 <- iris[1:50, 1:2]
+mard <- mvn(data = setosa2, mvnTest = "mardia")
+hz <- mvn(data = setosa2, mvnTest = "hz")
+roys <- mvn(data = setosa2, mvnTest = "royston")
+dh <- mvn(data = setosa2, mvnTest = "dh")
+en <- mvn(data = setosa2, mvnTest = "energy")
+
+mardiaSkewStat = formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[1],digits=3, format="f")
+mardiaSkewPval = formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[1],digits=3, format="f")
+mardiaKurtStat = formatC(as.numeric(levels(mard$multivariateNormality$Statistic))[2],digits=3, format="f")
+mardiaKurtPval = formatC(as.numeric(levels(mard$multivariateNormality$`p value`))[2],digits=3, format="f")
+hzStat = formatC(hz$multivariateNormality$HZ,digits=3, format="f")
+hzPval = formatC(hz$multivariateNormality$`p value`, digits=3, format="f")
+roysStat = formatC(roys$multivariateNormality$H,digits=3, format="f")
+roysPval = formatC(roys$multivariateNormality$`p value`, digits=3, format="f")
+dhStat = formatC(dh$multivariateNormality$E,digits=3, format="f")
+dhPval = formatC(dh$multivariateNormality$`p value`, digits=3, format="f")
+enStat = formatC(en$multivariateNormality$Statistic,digits=3, format="f")
+enPval = formatC(en$multivariateNormality$`p value`, digits=3, format="f")
+```
+
+: (\#tab:table3) MVN test results (bivariate setosa2 data).
+
+
+## Multivariate outliers
+
+
+Multivariate outliers are the common reason for violating MVN assumption. In other words, MVN assumption requires the absence of multivariate outliers. Thus, it is crucial to check whether the data have multivariate outliers, before starting to multivariate analysis. The MVN includes two multivariate outlier detection methods which are based on robust Mahalanobis distances (rMD(x)). Mahalanobis distance is a metric which calculates how far each observation is to the center of joint distribution, which can be thought of as the centroid in multivariate space. Robust distances are estimated from minimum covariance determinant estimators rather than the sample covariance [7]. These two approaches, defined as Mahalanobis distance and adjusted Mahalanobis distance in the package, detect multivariate outliers as given below,
+Mahalanobis Distance:
+
+1. Compute robust Mahalanobis distances (rMD(xi)),
+2. Compute the 97.5 percent quantile (Q) of the chi-square distribution,
+3. Declare rMD(xi) > Q as possible outlier. Adjusted Mahalanobis Distance:
+1. Compute robust Mahalanobis distances (rMD(xi)),
+2. Compute the 97.5 percent adjusted quantile (AQ) of the chi-Square distribution,
+3. Declare rMD(xi) > AQ as possible outlier.
+
+Define the `multivariateOutlierMethod` argument as `"quan"` for quantile method based on Mahalanobis distance and define it  as `"adj"` for adjusted quantile method based on Mahalanobis distance to detect multivariate outliers as given below. It also returns a new data set in which declared outliers are removed. Moreover, this argument creates Q-Q plots for visual inspection of the possible outliers. For this example, we will use another subset of the Iris data, which is virginica flowers, with the first three variables.
+
+```{r virginica}
+virginica <- iris[101:150, 1:3]
+```
+
+From Figure \@ref(fig:quan), Mahalanobis distance declares 6 observations as multivariate outlier whereas adjusted Mahalanobis distance declares 5 observations. See [8] for further information on multivariate outliers.
+
+
+```{r quan,  message=FALSE, fig.cap = "Multivariate outlier detection based on Mahalanobis distance"}
+result <- mvn(data = virginica, mvnTest = "hz", 
+              multivariateOutlierMethod = "quan")
+```
+
+```{r adj,  message=FALSE, fig.cap = "Multivariate outlier detection based on adjusted-Mahalanobis distance"}
+result <- mvn(data = virginica, mvnTest = "hz",
+              multivariateOutlierMethod = "adj")
+```
+
+## Subset analysis
+
+One may also perform sub-group analysis using mvn function. Let’s use the Iris dataset once more for this purpose. In the dataset, there is a group variable (Species), which defines the specie of the flower.
+
+```{r irisData}
+head(iris)
+```
+
+```{r subset}
+result <- mvn(data = iris, subset = "Species", mvnTest = "hz")
+result$multivariateNormality
+```
+
+According to the Henze-Zirkler’s test results, dataset for setosa does not follow a multivariate normal distribution, whereas dataset versicolor and virginica follow a multivariate normal distribution.
+
+
+# References {.unlisted .unnumbered}
+
+[1] S Korkmaz, D Goksuluk, and G Zararsiz. Mvn: An r package for assessing multivariate normality. The R Journal, 6(2):151–162, 2014.
+
+[2] R. A. Fisher. The use of multiple measurements in taxonomic problems. Annals of Eugenics, 7(2):179–188, 1936.
+
+[3] Edgar Anderson. The species problem in Iris. Missouri Botanical Garden Press, 23(3):457–509, 1936.
+
+[4] Tom Burdenski. Evaluating univariate, bivariate, and multivariate normality using graphical and statistical procedures. Multiple Linear Regression Viewpoints, 26(2):15–28, 2000.
+
+[5] James P Stevens. Applied multivariate statistics for the social sciences. Routledge, 2012.
+
+[6] Robert E Kass, Uri T Eden, and Emery N Brown. Analysis of Neural Data. Springer, 2014.
+
+[7] P. J. Rousseeuw and A. M. Leroy. Robust Regression and Outlier Detection. John Wiley & Sons, Inc., New York, NY, USA, 1987.
+
+[8] Peter Filzmoser, Robert G. Garrett, and Clemens Reimann. Multivariate outlier detection in exploration geochemistry. Computers & Geosciences, 31(5):579–587, 2005.

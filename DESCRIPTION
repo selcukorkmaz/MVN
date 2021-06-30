@@ -1,32 +1,26 @@
 Package: MVN
 Type: Package
 Title: Multivariate Normality Tests
-Version: 5.8
-Date: 2019-09-27
-Authors@R: c(person("Selcuk", "Korkmaz", role = c("aut", "cre"),
-                     email = "selcukorkmaz@gmail.com"),
-              person("Dincer", "Goksuluk", role = "aut",
+Version: 5.9
+Date: 2021-06-29
+Authors@R: c(person(given = "Selcuk", family =  "Korkmaz", role = c("aut", "cre"),
+                     email = "selcukorkmaz@gmail.com",
+           comment = c(ORCID = "0000-0003-4632-6850")),
+              person(given = "Dincer", family = "Goksuluk", role = "aut",
           	             email = "dincer.goksuluk@gmail.com"),
-              person("Gokmen", "Zararsiz", role = "aut",
+              person(given = "Gokmen", family = "Zararsiz", role = "aut",
           	             email = "gokmenzararsiz@hotmail.com"))
-Author: Selcuk Korkmaz [aut, cre],
-  Dincer Goksuluk [aut],
-  Gokmen Zararsiz [aut]
 Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
 Depends: R (>= 3.5.0)
+Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
-Suggests: knitr
-Imports: methods, nortest, moments, MASS, robustbase, mvoutlier, plyr,
-        psych, boot, energy, kableExtra, magrittr, car
-Collate: mvn.R hzTest.R mardiaTest.R roystonTest.R
+Imports: methods, nortest, moments, MASS, plyr,
+        psych, boot, energy, car
+Collate: mvn.R 
 Description: Performs multivariate normality tests and graphical approaches and
     implements multivariate outlier detection and univariate normality of marginal
     distributions through plots and tests, and performs multivariate Box-Cox transformation 
     (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
 Encoding: UTF-8
 License: GPL (>= 2)
-RoxygenNote: 6.1.1
-NeedsCompilation: no
-Packaged: 2019-09-27 13:51:38 UTC; selcukkorkmaz
-Repository: CRAN
-Date/Publication: 2019-09-27 14:40:07 UTC
+RoxygenNote: 7.1.1
