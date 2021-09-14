@@ -1,6 +1,6 @@
 mardia <- function(data, cov = TRUE, tol = 1e-25){
 
-  dataframe=as.data.frame(data)
+  data=as.data.frame(data)
   dname <- deparse(substitute(data))
   data <- data[complete.cases(data),]
   data <- as.matrix(data)
@@ -54,7 +54,7 @@ mardia <- function(data, cov = TRUE, tol = 1e-25){
 
 hz <- function(data, cov = TRUE, tol = 1e-25){
 
-  dataframe=as.data.frame(data)
+  data=as.data.frame(data)
   dname <- deparse(substitute(data))
   data <- data[complete.cases(data),]
   data <- as.matrix(data)
@@ -118,7 +118,7 @@ royston <- function (data, tol = 1e-25) {
   }
   if (!is.data.frame(data) && !is.matrix(data))
     stop("Input must be one of classes \"data frame\" or \"matrix\"")
-  dataframe = as.data.frame(data)
+  data = as.data.frame(data)
   dname <- deparse(substitute(data))
   data <- data[complete.cases(data), ]
   data <- as.matrix(data)
@@ -484,8 +484,8 @@ mvOutlier <- function (data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = c
   if (dim(data)[2] < 2 || is.null(dim(data))) {
     stop("number of variables must be equal or greater than 2")
   }
+  data = as.data.frame(data)
   data = data[complete.cases(data),]
-  dataframe = as.data.frame(data)
   dname <- deparse(substitute(data))
   method <- match.arg(method)
   n <- dim(data)[1]
@@ -608,8 +608,8 @@ uniPlot <- function (data, type = c("qqplot", "histogram", "box", "scatter"),
     stop(warning("Input must be one of classes \"vector\", \"data frame\" or \"matrix\""))
   # type = match.arg(type)
   if (is.data.frame(data) || is.matrix(data)) {
-    data = data[complete.cases(data),]
     data = as.data.frame(data)
+    data = data[complete.cases(data),]
     if (nrow(data) < 2)
       stop(warning("Too few number of observations (n < 2)."))
     if (is.null(colnames(data)))
