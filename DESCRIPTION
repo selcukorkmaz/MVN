@@ -14,8 +14,17 @@ Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
 Depends: R (>= 3.5.0)
 Suggests: BiocStyle, knitr, rmarkdown
 VignetteBuilder: knitr
-Imports: methods, nortest, moments, MASS, plyr,
-        psych, boot, energy, car
+Imports: 
+    methods,
+    nortest,
+    moments,
+    MASS,
+    plyr,
+    psych,
+    boot,
+    energy,
+    car,
+    dplyr
 Collate: mvn.R 
 Description: Performs multivariate normality tests and graphical approaches and
     implements multivariate outlier detection and univariate normality of marginal
