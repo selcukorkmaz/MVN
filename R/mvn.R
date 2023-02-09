@@ -495,7 +495,10 @@ mvOutlier <- function (data, qqplot = TRUE, alpha = 0.5, tol = 1e-25, method = c
   mah <- mahalanobis(data, center = covr$center, cov = covr$cov,
                      tol = tol)
   d <- mah
-  sortMah <- data.frame(sort(mah, decreasing = TRUE))
+  sortMah <- data.frame(mah)
+  row.names(sortMah) <- row.names(data)
+  sortMah <- dplyr::arrange(sortMah, desc(sortMah))
+  #sortMah <- data.frame(sort(mah, decreasing = TRUE))
   out <- cbind(rownames(sortMah), round(sortMah, 3), NA)
   colnames(out) <- c("Observation", "Mahalanobis Distance",
                      "Outlier")
