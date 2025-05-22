@@ -1,26 +1,56 @@
 Package: MVN
 Type: Package
 Title: Multivariate Normality Tests
-Version: 5.9
-Date: 2021-06-29
-Authors@R: c(person(given = "Selcuk", family =  "Korkmaz", role = c("aut", "cre"),
-                     email = "selcukorkmaz@gmail.com",
-           comment = c(ORCID = "0000-0003-4632-6850")),
-              person(given = "Dincer", family = "Goksuluk", role = "aut",
-          	             email = "dincer.goksuluk@gmail.com"),
-              person(given = "Gokmen", family = "Zararsiz", role = "aut",
-          	             email = "gokmenzararsiz@hotmail.com"))
+Version: 6.0
+Date: 2025-05-20
+Authors@R: 
+    c(
+      person(given = "Selcuk", family = "Korkmaz", role = c("aut", "cre"),
+             email = "selcukorkmaz@gmail.com", comment = c(ORCID = "0000-0003-4632-6850")),
+      person(given = "Dincer", family = "Goksuluk", role = "aut",
+             email = "dincer.goksuluk@gmail.com"),
+      person(given = "Gokmen", family = "Zararsiz", role = "aut",
+             email = "gokmenzararsiz@hotmail.com")
+    )
 Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
 Depends: R (>= 3.5.0)
-Suggests: BiocStyle, knitr, rmarkdown
+Imports:
+    methods,
+    nortest,
+    moments,
+    MASS,
+    boot,
+    car,
+    robustbase,
+    dplyr,
+    purrr,
+    stringr,
+    tibble,
+    ggplot2,
+    viridis
+Suggests: knitr, rmarkdown, BiocStyle
 VignetteBuilder: knitr
-Imports: methods, nortest, moments, MASS, plyr,
-        psych, boot, energy, car
-Collate: mvn.R 
-Description: Performs multivariate normality tests and graphical approaches and
-    implements multivariate outlier detection and univariate normality of marginal
-    distributions through plots and tests, and performs multivariate Box-Cox transformation 
-    (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
+Collate:
+    'mvn.R'
+    'mardia.R'
+    'hz.R'
+    'royston.R'
+    'doornik_hansen.R'
+    'energy.R'
+    'descriptives.R'
+    'test_univariate_normality.R'
+    'mvn_diagnostic_plot.R'
+    'mv_outlier.R'
+    'uni_plot.R'
+    'box_cox_transform.R'
+    'arw_adjustment.R'
+    'persp_ctrl.R'
+    'contour_ctrl.R'
+Description:
+    A suite of multivariate normality tests (Mardia, Henze–Zirkler, Royston,
+    Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,
+    bivariate density plots, and Box–Cox transformations (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
 Encoding: UTF-8
 License: GPL (>= 2)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.2
+NeedsCompilation: no

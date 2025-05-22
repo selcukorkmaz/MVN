@@ -2,123 +2,130 @@
 % Please edit documentation in R/mvn.R
 \name{mvn}
 \alias{mvn}
-\title{Multivariate Normality Tests}
+\title{Comprehensive Multivariate Normality and Diagnostic Function}
 \usage{
 mvn(
   data,
   subset = NULL,
-  mvnTest = "hz",
+  mvn_test = "hz",
   covariance = TRUE,
   tol = 1e-25,
-  alpha = 0.5,
+  alpha = 0.05,
   scale = FALSE,
-  desc = TRUE,
+  descriptives = TRUE,
   transform = "none",
   R = 1000,
-  univariateTest = "AD",
-  univariatePlot = "none",
-  multivariatePlot = "none",
-  multivariateOutlierMethod = "none",
-  bc = FALSE,
-  bcType = "rounded",
-  showOutliers = FALSE,
-  showNewData = FALSE
+  univariate_test = "AD",
+  univariate_plot = "none",
+  multivariate_plot = "none",
+  multivariate_outlier_method = "none",
+  box_cox_transform = FALSE,
+  box_cox_transform_type = "optimal",
+  show_outliers = FALSE,
+  show_new_data = FALSE,
+  tidy = TRUE
 )
 }
 \arguments{
-\item{data}{a numeric matrix or data frame.}
+\item{data}{A numeric matrix or data frame (rows = observations, columns = variables).}
 
-\item{subset}{define a variable name if subset analysis is required.}
+\item{subset}{Optional character; name of a grouping variable in \code{data} for subset analyses.}
 
-\item{mvnTest}{select one of the MVN tests. Type \code{"mardia"} for Mardia's test, \code{"hz"} for Henze-Zirkler's test, \code{"royston"} for Royston's test, \code{"dh"} for Doornik-Hansen's test and \code{energy} for E-statistic. Default is Henze-Zirkler's test \code{"hz"}. See details for further information.}
+\item{mvn_test}{Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"},
+\code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.}
 
-\item{covariance}{this option works for \code{"mardia"} and \code{"royston"}. If \code{TRUE} covariance matrix is normalized by \code{n}, if \code{FALSE} it is normalized by \code{n-1}.}
+\item{covariance}{Logical; for \code{"mardia"} and \code{"royston"} tests,
+if \code{TRUE} uses population covariance (n denominator), else sample (n-1). Default: \code{TRUE}.}
 
-\item{tol}{a numeric tolerance value which isused for inversion of the covariance matrix (\code{default = 1e-25}.}
+\item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-8}.}
 
-\item{alpha}{a numeric parameter controlling the size of the subsets over which the determinant is minimized. Allowed values for the alpha are between 0.5 and 1 and the default is 0.5.}
+\item{alpha}{Numeric; significance level for ARW outlier cutoff when
+\code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.}
 
-\item{scale}{if \code{TRUE} scales the colums of data.}
+\item{descriptives}{Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.}
 
-\item{desc}{a logical argument. If \code{TRUE} calculates descriptive statistics.}
+\item{transform}{Character; one of \code{"none"}, \code{"log"}, \code{"sqrt"}, \code{"square"}.
+Applies marginal transformations before analysis. Default: \code{"none"}.}
 
-\item{transform}{select a transformation method to transform univariate marginal via logarithm (\code{"log"}), square root (\code{"sqrt"}) and square (\code{"square"}).}
+\item{R}{Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.}
 
-\item{R}{number of bootstrap replicates for Energy test, default is 1000.}
+\item{univariate_test}{Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"},
+\code{"SF"}, \code{"AD"}. Default: \code{"AD"}.}
 
-\item{univariateTest}{select one of the univariate normality tests, Shapiro-Wilk (\code{"SW"}), Cramer-von Mises (\code{"CVM"}), Lilliefors (\code{"Lillie"}), Shapiro-Francia (\code{"SF"}), Anderson-Darling (\code{"AD"}). Default is Anderson-Darling (\code{"AD"}). Do not apply Shapiro-Wilk's test, if dataset includes more than 5000 cases or less than 3 cases.}
+\item{univariate_plot}{Character; one of \code{"none"}, \code{"qqplot"}, \code{"histogram"},
+\code{"boxplot"}, \code{"scatter"}. Default: \code{"none"}.}
 
-\item{univariatePlot}{select one of the univariate normality plots, Q-Q plot (\code{"qq"}), histogram (\code{"histogram"}), box plot (\code{"box"}), scatter (\code{"scatter"}).}
+\item{multivariate_plot}{Character; one of \code{"none"}, \code{"qq"}, \code{"persp"},
+\code{"contour"}. Default: \code{"none"}.}
 
-\item{multivariatePlot}{\code{"qq"} for chi-square Q-Q plot, \code{"persp"} for perspective plot, \code{"contour"} for contour plot.}
+\item{multivariate_outlier_method}{Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
+Default: \code{"none"}.}
 
-\item{multivariateOutlierMethod}{select multivariate outlier detection method, \code{"quan"} quantile method based on Mahalanobis distance (default) and \code{"adj"} adjusted quantile method based on Mahalanobis distance.}
+\item{show_outliers}{Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.}
 
-\item{bc}{if \code{TRUE} it applies Box-Cox power transformation.}
+\item{show_new_data}{Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.}
 
-\item{bcType}{select \code{"optimal"} or \code{"rounded"} type of Box-Cox power transformation, only applicable if \code{bc = TRUE}, default is \code{"rounded"}.}
+\item{tidy}{Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.}
 
-\item{showOutliers}{if \code{TRUE} prints multivariate outliers.}
+\item{bc}{Logical; if \code{TRUE}, apply Box–Cox transformation to all variables. Default: \code{FALSE}.}
 
-\item{showNewData}{if \code{TRUE} prints new data without outliers.}
+\item{bc_type}{Character; \code{"optimal"} or \code{"rounded"} lambda for Box–Cox. Default: \code{"optimal"}.}
 }
 \value{
-\code{multivariateNormality} corresponding multivariate normality test statistics and p-value.
-
-\code{univariateNormality} corresponding univariate normality test statistics and p-value.
-
-\code{Descriptives} Descriptive statistics.
-
-\code{multivariateOutliers} multivariate outliers.
-
-\code{newData} new data without multivariate outliers.
-
-multivariate normality plots, Q-Q, perspective or contour.
-
-chi-square Q-Q plot for multivariate outliers.
-
-univariate normality plots, Q-Q plot, histogram, box plot, scatter.
+A named list containing at least:
+\describe{
+  \item{multivariate_normality}{Data frame of the selected MVN test results.}
+  \item{univariate_normality}{Data frame of univariate normality tests.}
+}
+Additional elements (if requested):
+\describe{
+  \item{Descriptives}{Descriptive statistics data frame.}
+  \item{outliers}{Data frame of flagged outliers.}
+  \item{new_data}{Original data with outliers removed.}
+  \item{BoxCox_lambda}{Vector of lambdas if \code{bc = TRUE}.}
+}
 }
 \description{
-Performs multivariate normality tests, including Marida, Royston, Henze-Zirkler, Dornik-Haansen, E-Statistics, and graphical approaches and implements multivariate outlier detection and univariate normality of marginal distributions through plots and tests, and performs multivariate Box-Cox transformation.
+Conduct multivariate normality tests, outlier detection, univariate normality tests,
+descriptive statistics, Box–Cox transformation, and optional plots in one wrapper.
 }
 \details{
-If \code{mvnTest = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
+If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
 It can also calculate corrected version of skewness coefficient for small sample size (n< 20).
 For multivariate normality, both p-values of skewness and kurtosis statistics should be greater than 0.05.
 If sample size less than 20 then p.value.small should be used as significance value of skewness instead of p.value.skew.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 
-If \code{mvnTest = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
+If \code{mvn_test = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 
-If \code{mvnTest = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
+If \code{mvn_test = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
 If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 
-If \code{mvnTest = "dh"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+If \code{mvn_test = "doornik_hansen"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 
-If \code{mvnTest = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
+If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
 }
 \examples{
-result = mvn(data = iris[-4], subset = "Species", mvnTest = "hz",
-             univariateTest = "AD", univariatePlot = "histogram",
-             multivariatePlot = "qq", multivariateOutlierMethod = "adj",
-             showOutliers = TRUE, showNewData = TRUE)
+result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
+             univariate_test = "AD", univariate_plot = "histogram",
+             multivariate_plot = "qq", multivariate_outlier_method = "adj",
+             show_outliers = TRUE, show_new_data = TRUE)
 
 #### Multivariate Normality Result
-result$multivariateNormality
+result$multivariate_normality
 
 ### Univariate Normality Result
-result$univariateNormality
+result$univariate_normality
 
 ### Descriptives
-result$Descriptives
+result$descriptives
 
 ### Multivariate Outliers
-result$multivariateOutliers
+result$multivariate_outliers
 
 ### New data without multivariate outliers
-result$newData
+result$new_data
 
 # Note that this function also creates univariate histograms,
 # multivariate Q-Q plots for multivariate normality assessment

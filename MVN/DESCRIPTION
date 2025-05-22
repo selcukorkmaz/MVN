@@ -1,0 +1,33 @@
+Package: MVN
+Type: Package
+Title: Multivariate Normality Tests
+Version: 5.9
+Date: 2021-06-29
+Authors@R: c(person(given = "Selcuk", family =  "Korkmaz", role = c("aut", "cre"),
+                     email = "selcukorkmaz@gmail.com",
+           comment = c(ORCID = "0000-0003-4632-6850")),
+              person(given = "Dincer", family = "Goksuluk", role = "aut",
+          	             email = "dincer.goksuluk@gmail.com"),
+              person(given = "Gokmen", family = "Zararsiz", role = "aut",
+          	             email = "gokmenzararsiz@hotmail.com"))
+Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
+Depends: R (>= 3.5.0)
+Suggests: BiocStyle, knitr, rmarkdown
+VignetteBuilder: knitr
+Imports: methods, nortest, moments, MASS, plyr, psych, boot, energy,
+        car
+Collate: mvn.R
+Description: Performs multivariate normality tests and graphical approaches and
+    implements multivariate outlier detection and univariate normality of marginal
+    distributions through plots and tests, and performs multivariate Box-Cox transformation 
+    (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
+Encoding: UTF-8
+License: GPL (>= 2)
+RoxygenNote: 7.1.1
+NeedsCompilation: no
+Packaged: 2021-06-30 07:33:28 UTC; selcukkorkmaz
+Author: Selcuk Korkmaz [aut, cre] (<https://orcid.org/0000-0003-4632-6850>),
+  Dincer Goksuluk [aut],
+  Gokmen Zararsiz [aut]
+Repository: CRAN
+Date/Publication: 2021-06-30 08:40:12 UTC
