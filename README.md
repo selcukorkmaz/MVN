@@ -61,7 +61,7 @@ To install the latest version from **CRAN**:
 install.packages("MVN")
 ```
 
-## To install the development version from GitHub:
+To install the development version from GitHub:
 
 ```r
 devtools::install_github("selcukorkmaz/MVN")
