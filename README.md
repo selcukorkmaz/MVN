@@ -75,11 +75,7 @@ library(MVN)
 # Run MVN tests and diagnostics on iris data
 result <- mvn(
   data = iris[1:50, 1:3],
-  mvn_test = "hz",
-  univariate_test = "AD",
-  multivariate_outlier_method = "adj",
-  show_outliers = TRUE,
-  show_new_data = TRUE
+  mvn_test = "hz"
 )
 
 # View results
