@@ -34,10 +34,8 @@ mv_outlier(
 }
 \value{
 A list with two elements:
-  \describe{
-    \item{outlier}{A data frame of all observations sorted by descending MD, with a logical Outlier flag.}
-    \item{newData}{A subset of the original data with non-outliers only.}
-  }
+  - outlier: A data frame of all observations sorted by descending MD, with a logical Outlier flag.
+  - newData: A subset of the original data with non-outliers only.
 }
 \description{
 Computes robust Mahalanobis distances for multivariate data using Minimum Covariance Determinant (MCD),

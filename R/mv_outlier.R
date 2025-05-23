@@ -12,13 +12,15 @@
 #' @param offset Numeric; text offset for labels on QQ-plot. Default is 0.5.
 #' @param main Character; main title for QQ-plot. Default is NULL.
 #' @return A list with two elements:
-#'   \describe{
-#'     \item{outlier}{A data frame of all observations sorted by descending MD, with a logical Outlier flag.}
-#'     \item{newData}{A subset of the original data with non-outliers only.}
-#'   }
+#'   - outlier: A data frame of all observations sorted by descending MD, with a logical Outlier flag.
+#'   - newData: A subset of the original data with non-outliers only.
 #' @importFrom stats complete.cases qchisq mahalanobis
 #' @importFrom graphics plot abline legend text
 #' @importFrom MASS cov.mcd
+#' @importFrom dplyr arrange
+#' @importFrom ggplot2 ggplot aes geom_point geom_text scale_color_manual
+#'   scale_shape_manual geom_vline labs annotate theme_minimal theme element_text
+#'   element_rect element_blank
 #' @export
 mv_outlier <- function (data,
                        qqplot = TRUE,
@@ -46,7 +48,9 @@ mv_outlier <- function (data,
                      center = covr$center,
                      cov = covr$cov)
   d <- mah
-  sortMah <- data.frame(sort(mah, decreasing = TRUE))
+  sortMah <- data.frame(mah)
+  row.names(sortMah) <- row.names(data)
+  sortMah <- arrange(sortMah, desc(sortMah))
   out <- cbind(rownames(sortMah), round(sortMah, 3), NA)
   colnames(out) <- c("Observation", "Mahalanobis Distance", "Outlier")
   if (method == "adj") {
@@ -213,9 +217,16 @@ mv_outlier <- function (data,
         )
       
     }
-    newData <- out[out$Outlier %in% "FALSE", ]
-    ind <- sort(row.names(newData))
-    newData <- data[ind, ]
+    # Step 1: Get the row numbers from the original data (stored as character in "Observation")
+    non_outlier_obs <- out[out$Outlier == "FALSE", "Observation"]
+    
+    # Step 2: Convert to numeric row indices
+    non_outlier_indices <- as.numeric(non_outlier_obs)
+    
+    # Step 3: Subset and sort the data
+    newData <- data[sort(non_outlier_indices), ]
+    
+    
   }
   result <- list(
     qq_outlier_plot = qq_outlier_plot,  # your ggplot object

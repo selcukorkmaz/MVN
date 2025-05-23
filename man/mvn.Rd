@@ -16,8 +16,6 @@ mvn(
   transform = "none",
   R = 1000,
   univariate_test = "AD",
-  univariate_plot = "none",
-  multivariate_plot = "none",
   multivariate_outlier_method = "none",
   box_cox_transform = FALSE,
   box_cox_transform_type = "optimal",
@@ -52,12 +50,6 @@ Applies marginal transformations before analysis. Default: \code{"none"}.}
 \item{univariate_test}{Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"},
 \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.}
 
-\item{univariate_plot}{Character; one of \code{"none"}, \code{"qqplot"}, \code{"histogram"},
-\code{"boxplot"}, \code{"scatter"}. Default: \code{"none"}.}
-
-\item{multivariate_plot}{Character; one of \code{"none"}, \code{"qq"}, \code{"persp"},
-\code{"contour"}. Default: \code{"none"}.}
-
 \item{multivariate_outlier_method}{Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 Default: \code{"none"}.}
 
@@ -72,22 +64,20 @@ Default: \code{"none"}.}
 \item{bc_type}{Character; \code{"optimal"} or \code{"rounded"} lambda for Box–Cox. Default: \code{"optimal"}.}
 }
 \value{
-A named list containing at least:
-\describe{
-  \item{multivariate_normality}{Data frame of the selected MVN test results.}
-  \item{univariate_normality}{Data frame of univariate normality tests.}
-}
-Additional elements (if requested):
-\describe{
-  \item{Descriptives}{Descriptive statistics data frame.}
-  \item{outliers}{Data frame of flagged outliers.}
-  \item{new_data}{Original data with outliers removed.}
-  \item{BoxCox_lambda}{Vector of lambdas if \code{bc = TRUE}.}
-}
+A named list containing:
+  - multivariate_normality: Data frame of the selected multivariate normality (MVN) test results.
+  - univariate_normality: Data frame of univariate normality test results.
+Additional elements (if requested and available):
+  - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
+  - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
+  - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
+  - box_cox_lambda: Estimated Box–Cox lambda values (if box_cox_transform = TRUE).
+  - data: Processed data matrix used in the analysis (transformed and/or cleaned).
+  - subset: The grouping variable used for subset analysis, if applicable.
 }
 \description{
 Conduct multivariate normality tests, outlier detection, univariate normality tests,
-descriptive statistics, Box–Cox transformation, and optional plots in one wrapper.
+descriptive statistics, and Box–Cox transformation in one wrapper.
 }
 \details{
 If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
@@ -112,7 +102,7 @@ result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
              multivariate_plot = "qq", multivariate_outlier_method = "adj",
              show_outliers = TRUE, show_new_data = TRUE)
 
-#### Multivariate Normality Result
+### Multivariate Normality Result
 result$multivariate_normality
 
 ### Univariate Normality Result

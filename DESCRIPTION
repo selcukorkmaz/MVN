@@ -23,6 +23,7 @@ Imports:
     car,
     robustbase,
     dplyr,
+    tidyr,
     purrr,
     stringr,
     tibble,
@@ -41,7 +42,7 @@ Collate:
     'test_univariate_normality.R'
     'mvn_diagnostic_plot.R'
     'mv_outlier.R'
-    'uni_plot.R'
+    'univariate_diagnostic_plot.R'
     'box_cox_transform.R'
     'arw_adjustment.R'
     'persp_ctrl.R'

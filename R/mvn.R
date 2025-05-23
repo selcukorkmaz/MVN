@@ -1,7 +1,7 @@
 #' Comprehensive Multivariate Normality and Diagnostic Function
 #'
 #' Conduct multivariate normality tests, outlier detection, univariate normality tests,
-#' descriptive statistics, Box–Cox transformation, and optional plots in one wrapper.
+#' descriptive statistics, and Box–Cox transformation in one wrapper.
 #'
 #' @param data A numeric matrix or data frame (rows = observations, columns = variables).
 #' @param subset Optional character; name of a grouping variable in \code{data} for subset analyses.
@@ -20,76 +20,69 @@
 #' @param R Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.
 #' @param univariate_test Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"},
 #'   \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.
-#' @param univariate_plot Character; one of \code{"none"}, \code{"qqplot"}, \code{"histogram"},
-#'   \code{"boxplot"}, \code{"scatter"}. Default: \code{"none"}.
-#' @param multivariate_plot Character; one of \code{"none"}, \code{"qq"}, \code{"persp"},
-#'   \code{"contour"}. Default: \code{"none"}.
 #' @param multivariate_outlier_method Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 #'   Default: \code{"none"}.
 #' @param show_outliers Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.
 #' @param show_new_data Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.
 #' @param tidy Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.
-#' @return A named list containing at least:
-#' \describe{
-#'   \item{multivariate_normality}{Data frame of the selected MVN test results.}
-#'   \item{univariate_normality}{Data frame of univariate normality tests.}
-#' }
-#' Additional elements (if requested):
-#' \describe{
-#'   \item{Descriptives}{Descriptive statistics data frame.}
-#'   \item{outliers}{Data frame of flagged outliers.}
-#'   \item{new_data}{Original data with outliers removed.}
-#'   \item{BoxCox_lambda}{Vector of lambdas if \code{bc = TRUE}.}
-#' }
+#' @return A named list containing:
+#'   - multivariate_normality: Data frame of the selected multivariate normality (MVN) test results.
+#'   - univariate_normality: Data frame of univariate normality test results.
+#' Additional elements (if requested and available):
+#'   - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
+#'   - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
+#'   - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
+#'   - box_cox_lambda: Estimated Box–Cox lambda values (if box_cox_transform = TRUE).
+#'   - data: Processed data matrix used in the analysis (transformed and/or cleaned).
+#'   - subset: The grouping variable used for subset analysis, if applicable.
 #'
-#'@details
-#'If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
-#'It can also calculate corrected version of skewness coefficient for small sample size (n< 20).
-#'For multivariate normality, both p-values of skewness and kurtosis statistics should be greater than 0.05.
-#'If sample size less than 20 then p.value.small should be used as significance value of skewness instead of p.value.skew.
-#'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
+#' @details
+#' If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
+#' It can also calculate corrected version of skewness coefficient for small sample size (n< 20).
+#' For multivariate normality, both p-values of skewness and kurtosis statistics should be greater than 0.05.
+#' If sample size less than 20 then p.value.small should be used as significance value of skewness instead of p.value.skew.
+#' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
-#'If \code{mvn_test = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
-#'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
+#' If \code{mvn_test = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
+#' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
-#'If \code{mvn_test = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
-#'If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
+#' If \code{mvn_test = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
+#' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 #'
-#'If \code{mvn_test = "doornik_hansen"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
+#' If \code{mvn_test = "doornik_hansen"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 #'
-#'If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
+#' If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality test. The code is adapted from energy package (Rizzo and Szekely, 2017).
 #'
 #' @author Selcuk Korkmaz, \email{selcukorkmaz@gmail.com}
 #'
 #' @references
+#' Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014 6(2):151-162. URL \url{https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf}
 #'
-#'Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014 6(2):151-162. URL \url{https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf}
+#' Mardia, K. V. (1970), Measures of multivariate skewnees and kurtosis with applications. Biometrika, 57(3):519-530.
 #'
-#'Mardia, K. V. (1970), Measures of multivariate skewnees and kurtosis with applications. Biometrika, 57(3):519-530.
+#' Mardia, K. V. (1974), Applications of some measures of multivariate skewness and kurtosis for testing normality and robustness studies. Sankhy A, 36:115-128.
 #'
-#'Mardia, K. V. (1974), Applications of some measures of multivariate skewness and kurtosis for testing normality and robustness studies. Sankhy A, 36:115-128.
+#' Henze, N. and Zirkler, B. (1990), A Class of Invariant Consistent Tests for Multivariate Normality. Commun. Statist.-Theor. Meth., 19(10): 35953618.
 #'
-#'Henze, N. and Zirkler, B. (1990), A Class of Invariant Consistent Tests for Multivariate Normality. Commun. Statist.-Theor. Meth., 19(10): 35953618.
+#' Henze, N. and Wagner, Th. (1997), A New Approach to the BHEP tests for multivariate normality. Journal of Multivariate Analysis, 62:1-23.
 #'
-#'Henze, N. and Wagner, Th. (1997), A New Approach to the BHEP tests for multivariate normality. Journal of Multivariate Analysis, 62:1-23.
+#' Royston, J.P. (1982). An Extension of Shapiro and Wilks W Test for Normality to Large Samples. Applied Statistics, 31(2):115124.
 #'
-#'Royston, J.P. (1982). An Extension of Shapiro and Wilks W Test for Normality to Large Samples. Applied Statistics, 31(2):115124.
+#' Royston, J.P. (1983). Some Techniques for Assessing Multivariate Normality Based on the Shapiro-Wilk W. Applied Statistics, 32(2).
 #'
-#'Royston, J.P. (1983). Some Techniques for Assessing Multivariate Normality Based on the Shapiro-Wilk W. Applied Statistics, 32(2).
+#' Royston, J.P. (1992). Approximating the Shapiro-Wilk W-Test for non-normality. Statistics and Computing, 2:117-119.121133.
 #'
-#'Royston, J.P. (1992). Approximating the Shapiro-Wilk W-Test for non-normality. Statistics and Computing, 2:117-119.121133.
+#' Royston, J.P. (1995). Remark AS R94: A remark on Algorithm AS 181: The W test for normality. Applied Statistics, 44:547-551.
 #'
-#'Royston, J.P. (1995). Remark AS R94: A remark on Algorithm AS 181: The W test for normality. Applied Statistics, 44:547-551.
+#' Shapiro, S. and Wilk, M. (1965). An analysis of variance test for normality. Biometrika, 52:591611.
 #'
-#'Shapiro, S. and Wilk, M. (1965). An analysis of variance test for normality. Biometrika, 52:591611.
+#' Doornik, J.A. and Hansen, H. (2008). An Omnibus test for univariate and multivariate normality. Oxford Bulletin of Economics and Statistics 70, 927-939.
 #'
-#'Doornik, J.A. and Hansen, H. (2008). An Omnibus test for univariate and multivariate normality. Oxford Bulletin of Economics and Statistics 70, 927-939.
+#' G. J. Szekely and M. L. Rizzo (2013). Energy statistics: A class of statistics based on distances, Journal of Statistical Planning and Inference, http://dx.doi.org/10.1016/j.jspi.2013.03.018
 #'
-#'G. J. Szekely and M. L. Rizzo (2013). Energy statistics: A class of statistics based on distances, Journal of Statistical Planning and Inference, http://dx.doi.org/10.1016/j.jspi.2013.03.018
+#' M. L. Rizzo and G. J. Szekely (2016). Energy Distance, WIRES Computational Statistics, Wiley, Volume 8 Issue 1, 27-38. Available online Dec., 2015, http://dx.doi.org/10.1002/wics.1375.
 #'
-#'M. L. Rizzo and G. J. Szekely (2016). Energy Distance, WIRES Computational Statistics, Wiley, Volume 8 Issue 1, 27-38. Available online Dec., 2015, http://dx.doi.org/10.1002/wics.1375.
-#'
-#'G. J. Szekely and M. L. Rizzo (2017). The Energy of Data. The Annual Review of Statistics and Its Application 4:447-79. 10.1146/annurev-statistics-060116-054026
+#' G. J. Szekely and M. L. Rizzo (2017). The Energy of Data. The Annual Review of Statistics and Its Application 4:447-79. 10.1146/annurev-statistics-060116-054026
 #'
 #' @examples
 #' result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
@@ -97,7 +90,7 @@
 #'              multivariate_plot = "qq", multivariate_outlier_method = "adj",
 #'              show_outliers = TRUE, show_new_data = TRUE)
 #'
-#' #### Multivariate Normality Result
+#' ### Multivariate Normality Result
 #' result$multivariate_normality
 #'
 #' ### Univariate Normality Result
@@ -116,7 +109,7 @@
 #' # multivariate Q-Q plots for multivariate normality assessment
 #' # and multivariate outlier detection.
 #'
-#' @importFrom energy mvnorm.e
+#' @importFrom energy mvnorm.etest
 #' @importFrom boot boot
 #' @importFrom moments kurtosis skewness
 #' @importFrom methods new
@@ -127,14 +120,10 @@
 #' @importFrom graphics contour persp abline boxplot curve hist legend par plot text
 #' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
 #' @importFrom purrr imap_dfr
-#' @importFrom dplyr mutate select %>%
+#' @importFrom dplyr mutate select %>% bind_rows
 #' @importFrom stringr str_remove
 #' @importFrom tibble rownames_to_column
-#'
 #' @export
-#'
-
-
 
 
 mvn <- function(data,
@@ -148,8 +137,6 @@ mvn <- function(data,
                 transform = "none",
                 R = 1000,
                 univariate_test = "AD",
-                univariate_plot = "none",
-                multivariate_plot = "none",
                 multivariate_outlier_method = "none",
                 box_cox_transform = FALSE,
                 box_cox_transform_type = "optimal",
@@ -276,19 +263,13 @@ mvn <- function(data,
       )
       mvOutliers = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE", ]
       newData = mvOutlierRes$newData
-      qq_outlier_plot = mvOutlierRes$qq_outlier_plot
-      
+
     } else{
       mvOutliers = NULL
       newData = NULL
-      qq_outlier_plot = NULL
-      
+
     }
-    
-    # if (univariate_plot != "none") {
-    #   uni_plot(data, type = univariate_plot)
-    #   
-    # }
+
     
   } else{
     if (box_cox_transform) {
@@ -419,78 +400,9 @@ mvn <- function(data,
       descs = NULL
     }
     
-    
-    if (multivariate_plot == "qq") {
-      for (i in 1:length(name)) {
-        subsetData = splitData[[i]][complete.cases(splitData[[i]]), ]
-        
-        
-        n <- dim(subsetData)[1]
-        p <- dim(subsetData)[2]
-        
-        
-        if (covariance) {
-          S <- ((n - 1) / n) * cov(subsetData)
-        } else {
-          S <- cov(subsetData)
-        }
-        
-        dif <- scale(subsetData, scale = FALSE)
-        
-        d <- diag(dif %*% solve(S, tol = tol) %*% t(dif))
-        
-        r <- rank(d)
-        
-        chi2q <- qchisq((r - 0.5) / n, p)
-        plot(
-          d,
-          chi2q,
-          pch = 19,
-          main = paste0("Chi-Square Q-Q Plot for ", name[i]),
-          xlab = "Squared Mahalanobis Distance",
-          ylab = "Chi-Square Quantile"
-        )
-        abline(0, 1, lwd = 2, col = "black")
-        
-      }
-    }
-    
-    if (multivariate_plot == "persp") {
-      for (i in 1:length(name)) {
-        subsetData = splitData[[i]][complete.cases(splitData[[i]]), ]
-        
-        mvnPlot(
-          subsetData,
-          type = "persp",
-          default = TRUE,
-          plotCtrl = c(perspControl(), contourControl()),
-          main = paste0("Perspective Plot for ", name[i])
-        )
-      }
-    }
-    
-    if (multivariate_plot == "contour") {
-      for (i in 1:length(name)) {
-        subsetData = splitData[[i]][complete.cases(splitData[[i]]), ]
-        
-        mvnPlot(
-          subsetData,
-          type = "contour",
-          default = TRUE,
-          plotCtrl = c(perspControl(), contourControl()),
-          main = paste0("Contour Plot for ", name[i])
-        )
-      }
-    }
-    
-    
     if (multivariate_outlier_method != "none") {
       mvOutliers = list()
       newData = list()
-      qq_outlier_plot = list()
-      
-
-      
       
       for (i in 1:length(name)) {
         
@@ -514,27 +426,17 @@ mvn <- function(data,
           main = main
         )
         mvOutliers[[i]] = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE", ]
-        newData[[i]] = mvOutlierRes$newData
-        qq_outlier_plot[[i]] = mvOutlierRes$qq_outlier_plot
-        
+        newData[[i]] = mvOutlierRes$newData[order(as.numeric(rownames(mvOutlierRes$newData))), ]
       }
       
       
       names(mvOutliers) = name
       names(newData) = name
-      names(qq_outlier_plot) = name
-      
+
     } else{
       mvOutliers = NULL
       newData = NULL
-      qq_outlier_plot = NULL
     }
-    
-    
-    # if (univariate_plot != "none") {
-    #   lapply(splitData, uni_plot, type = univariate_plot)
-    #   
-    # }
     
     
   }
@@ -619,6 +521,13 @@ mvn <- function(data,
       }
       
       
+      newData <- do.call(rbind, lapply(names(newData), function(group) {
+        df <- newData[[group]]
+        df[[subset]] <- group
+        df
+      }))
+      
+      
     } else{
       mvnResult <- mvnResult %>%
         mutate(
@@ -673,7 +582,7 @@ mvn <- function(data,
       
     }
     
-  }
+    }
   
   
   result = list(multivariate_normality = mvnResult,
@@ -686,12 +595,6 @@ mvn <- function(data,
   
   if (show_outliers) {
     result = c(result, list(multivariate_outliers = mvOutliers))
-    
-  }
-  
-  if(multivariate_outlier_method != "none"){
-    
-    result = c(result, list(qq_outlier_plot = qq_outlier_plot))
     
   }
   
