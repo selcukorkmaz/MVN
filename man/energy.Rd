@@ -11,23 +11,23 @@ energy(data, R = 1000, seed = 123)
 
 \item{R}{Integer; number of bootstrap replicates to estimate the null distribution. Default is 1000.}
 
-\item{seed}{An integer value to set the random seed for reproducibility.}
+\item{seed}{Optional integer to set the random seed for reproducibility.}
 }
 \value{
-A data frame with one row containing:
-\describe{
-  \item{Test}{Name of the test ("E-Statistic").}
-  \item{Statistic}{Observed E-statistic (numeric).}
-  \item{p.value}{Bootstrap p-value (numeric).}
-}
+A data frame with one row containing the following columns:
+\code{Test}, the name of the test ("E-Statistic");
+\code{Statistic}, the observed E-statistic;
+and \code{p.value}, the p-value obtained from the bootstrap procedure.
 }
 \description{
-Performs the E-statistic test for multivariate normality via a parametric bootstrap.
+Performs the E-statistic test for multivariate normality using a parametric bootstrap
+to estimate the null distribution of the test statistic.
 }
 \examples{
 \dontrun{
-data = iris[1:50, 1:4]
+data <- iris[1:50, 1:4]
 energy_result <- energy(data, R = 500)
 energy_result
 }
+
 }

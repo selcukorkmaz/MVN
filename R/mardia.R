@@ -1,26 +1,27 @@
 #' Mardia's Test for Multivariate Normality
 #'
-#' Performs Mardia’s skewness and kurtosis tests to assess multivariate normality.
+#' Performs Mardia’s skewness and kurtosis tests to assess multivariate normality
+#' in a multivariate dataset.
 #'
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
-#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator (\eqn{(n-1)/n\,\times\,\cov}), otherwise uses the sample covariance. Default is \code{TRUE}.
-#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.
-#' @return A data frame with three rows corresponding to skewness, kurtosis, and overall MVN result. Columns are:
-#'   \describe{
-#'     \item{Test}{Name of the test.}
-#'     \item{Statistic}{Test statistic (numeric).}
-#'     \item{p.value}{P-value (numeric).}
-#'   }
+#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
+#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix.
+#' Default is \code{1e-25}.
+#'
+#' @return A data frame with two rows, one for Mardia's skewness test and one for the kurtosis test.
+#' Each row contains the name of the test (\code{Test}), the test statistic (\code{Statistic}),
+#' and the associated p-value (\code{p.value}).
+#'
 #' @examples
 #' \dontrun{
-#' # Example using the Iris dataset (numeric columns only)
-#' data = iris[1:50, 1:4]
+#' data <- iris[1:50, 1:4]
 #' mardia_result <- mardia(data)
 #' mardia_result
 #' }
+#'
 #' @importFrom stats cov complete.cases pchisq pnorm
 #' @export
-mardia <- function(data, use_population = TRUE, tol = 1e-8) {
+mardia <- function(data, use_population = TRUE, tol = 1e-25) {
   # Convert to data frame
   df <- as.data.frame(data)
   

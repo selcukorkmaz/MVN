@@ -8,7 +8,7 @@ mvn(
   data,
   subset = NULL,
   mvn_test = "hz",
-  covariance = TRUE,
+  use_population = TRUE,
   tol = 1e-25,
   alpha = 0.05,
   scale = FALSE,
@@ -29,16 +29,17 @@ mvn(
 
 \item{subset}{Optional character; name of a grouping variable in \code{data} for subset analyses.}
 
-\item{mvn_test}{Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"},
+\item{mvn_test}{Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"}, 
 \code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.}
 
-\item{covariance}{Logical; for \code{"mardia"} and \code{"royston"} tests,
-if \code{TRUE} uses population covariance (n denominator), else sample (n-1). Default: \code{TRUE}.}
+\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.}
 
 \item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.}
 
-\item{alpha}{Numeric; significance level for ARW outlier cutoff when
+\item{alpha}{Numeric; significance level for ARW outlier cutoff when 
 \code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.}
+
+\item{scale}{Logical; if \code{TRUE}, standardizes the data before analysis. Default: \code{FALSE}.}
 
 \item{descriptives}{Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.}
 
@@ -47,21 +48,21 @@ Applies marginal transformations before analysis. Default: \code{"none"}.}
 
 \item{R}{Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.}
 
-\item{univariate_test}{Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"},
+\item{univariate_test}{Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"}, 
 \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.}
 
 \item{multivariate_outlier_method}{Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 Default: \code{"none"}.}
+
+\item{box_cox_transform}{Logical; if \code{TRUE}, applies Box-Cox transformation to all variables. Default: \code{FALSE}.}
+
+\item{box_cox_transform_type}{Character; either \code{"optimal"} or \code{"rounded"} lambda for Box-Cox. Default: \code{"optimal"}.}
 
 \item{show_outliers}{Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.}
 
 \item{show_new_data}{Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.}
 
 \item{tidy}{Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.}
-
-\item{bc}{Logical; if \code{TRUE}, apply Box–Cox transformation to all variables. Default: \code{FALSE}.}
-
-\item{bc_type}{Character; \code{"optimal"} or \code{"rounded"} lambda for Box–Cox. Default: \code{"optimal"}.}
 }
 \value{
 A named list containing:
@@ -71,13 +72,13 @@ Additional elements (if requested and available):
   - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
   - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
   - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
-  - box_cox_lambda: Estimated Box–Cox lambda values (if box_cox_transform = TRUE).
+  - box_cox_lambda: Estimated Box-Cox lambda values (if box_cox_transform = TRUE).
   - data: Processed data matrix used in the analysis (transformed and/or cleaned).
   - subset: The grouping variable used for subset analysis, if applicable.
 }
 \description{
 Conduct multivariate normality tests, outlier detection, univariate normality tests,
-descriptive statistics, and Box–Cox transformation in one wrapper.
+descriptive statistics, and Box-Cox transformation in one wrapper.
 }
 \details{
 If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
@@ -98,8 +99,8 @@ If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality t
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
-             univariate_test = "AD", univariate_plot = "histogram",
-             multivariate_plot = "qq", multivariate_outlier_method = "adj",
+             univariate_test = "AD", 
+             multivariate_outlier_method = "adj",
              show_outliers = TRUE, show_new_data = TRUE)
 
 ### Multivariate Normality Result

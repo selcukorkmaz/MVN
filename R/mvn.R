@@ -1,30 +1,31 @@
 #' Comprehensive Multivariate Normality and Diagnostic Function
 #'
 #' Conduct multivariate normality tests, outlier detection, univariate normality tests,
-#' descriptive statistics, and Box–Cox transformation in one wrapper.
+#' descriptive statistics, and Box-Cox transformation in one wrapper.
 #'
 #' @param data A numeric matrix or data frame (rows = observations, columns = variables).
 #' @param subset Optional character; name of a grouping variable in \code{data} for subset analyses.
-#' @param mvn_test Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"},
+#' @param mvn_test Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"}, 
 #'   \code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.
-#' @param covariance Logical; for \code{"mardia"} and \code{"royston"} tests,
-#'   if \code{TRUE} uses population covariance (n denominator), else sample (n-1). Default: \code{TRUE}.
+#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
 #' @param tol Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.
-#' @param alpha Numeric; significance level for ARW outlier cutoff when
+#' @param alpha Numeric; significance level for ARW outlier cutoff when 
 #'   \code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.
+#' @param scale Logical; if \code{TRUE}, standardizes the data before analysis. Default: \code{FALSE}.
 #' @param descriptives Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.
 #' @param transform Character; one of \code{"none"}, \code{"log"}, \code{"sqrt"}, \code{"square"}.
 #'   Applies marginal transformations before analysis. Default: \code{"none"}.
-#' @param bc Logical; if \code{TRUE}, apply Box–Cox transformation to all variables. Default: \code{FALSE}.
-#' @param bc_type Character; \code{"optimal"} or \code{"rounded"} lambda for Box–Cox. Default: \code{"optimal"}.
+#' @param box_cox_transform Logical; if \code{TRUE}, applies Box-Cox transformation to all variables. Default: \code{FALSE}.
+#' @param box_cox_transform_type Character; either \code{"optimal"} or \code{"rounded"} lambda for Box-Cox. Default: \code{"optimal"}.
 #' @param R Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.
-#' @param univariate_test Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"},
+#' @param univariate_test Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"}, 
 #'   \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.
 #' @param multivariate_outlier_method Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 #'   Default: \code{"none"}.
 #' @param show_outliers Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.
 #' @param show_new_data Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.
 #' @param tidy Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.
+
 #' @return A named list containing:
 #'   - multivariate_normality: Data frame of the selected multivariate normality (MVN) test results.
 #'   - univariate_normality: Data frame of univariate normality test results.
@@ -32,7 +33,7 @@
 #'   - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
 #'   - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
 #'   - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
-#'   - box_cox_lambda: Estimated Box–Cox lambda values (if box_cox_transform = TRUE).
+#'   - box_cox_lambda: Estimated Box-Cox lambda values (if box_cox_transform = TRUE).
 #'   - data: Processed data matrix used in the analysis (transformed and/or cleaned).
 #'   - subset: The grouping variable used for subset analysis, if applicable.
 #'
@@ -86,8 +87,8 @@
 #'
 #' @examples
 #' result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
-#'              univariate_test = "AD", univariate_plot = "histogram",
-#'              multivariate_plot = "qq", multivariate_outlier_method = "adj",
+#'              univariate_test = "AD", 
+#'              multivariate_outlier_method = "adj",
 #'              show_outliers = TRUE, show_new_data = TRUE)
 #'
 #' ### Multivariate Normality Result
@@ -115,7 +116,6 @@
 #' @importFrom methods new
 #' @importFrom nortest sf.test cvm.test lillie.test ad.test
 #' @importFrom MASS kde2d cov.mcd
-#' @importFrom psych describe
 #' @importFrom car powerTransform
 #' @importFrom graphics contour persp abline boxplot curve hist legend par plot text
 #' @importFrom stats rnorm var median cor cov dnorm pchisq plnorm pnorm qchisq qnorm qqline qqnorm quantile sd shapiro.test complete.cases mahalanobis
@@ -124,12 +124,10 @@
 #' @importFrom stringr str_remove
 #' @importFrom tibble rownames_to_column
 #' @export
-
-
 mvn <- function(data,
                 subset = NULL,
                 mvn_test = "hz",
-                covariance = TRUE,
+                use_population = TRUE,
                 tol = 1e-25,
                 alpha = 0.05,
                 scale = FALSE,
@@ -143,13 +141,45 @@ mvn <- function(data,
                 show_outliers = FALSE,
                 show_new_data = FALSE,
                 tidy = TRUE) {
+  
   colnms = colnames(data)
   
-  if (box_cox_transform && transform != "none") {
-    stop(
-      "Please select transform = 'none' if you apply Box-Cox transformation or select box_cox_transform = FALSE and apply one of the transformation method directly, as log, sqrt and square."
-    )
+  if (!is.data.frame(data) && !is.matrix(data)) {
+    stop("Input data must be a data frame or matrix.")
   }
+  
+  
+  if (ncol(data) < 2) {
+    stop("Multivariate normality requires at least two variables.")
+  }
+  
+  if (!is.null(subset) && !(subset %in% colnames(data))) {
+    stop("The 'subset' variable does not exist in the data.")
+  }
+  
+  
+  if (box_cox_transform && transform != "none") {
+    stop("Use either `transform` or `box_cox_transform`, not both.")
+  }
+  
+  if (!mvn_test %in% c("mardia", "hz", "royston", "doornik_hansen", "energy")) {
+    stop("Invalid mvn_test. Choose from: 'mardia', 'hz', 'royston', 'doornik_hansen', 'energy'.")
+  }
+  
+  if (!univariate_test %in% c("SW", "CVM", "Lillie", "SF", "AD")) {
+    stop("Invalid univariate_test. Choose from: 'SW', 'CVM', 'Lillie', 'SF', 'AD'.")
+  }
+  
+  if (box_cox_transform && any(data <= 0)) {
+    stop("Box-Cox transformation requires strictly positive data.")
+  }
+  
+  
+  if (anyNA(data)) {
+    warning("Missing values detected. Rows with missing data will be removed.")
+    data <- data[complete.cases(data), ]
+  }
+  
   
   if (is.null(subset)) {
     if (box_cox_transform) {
@@ -180,12 +210,12 @@ mvn <- function(data,
     
     if (!(dim(data)[2] < 2 || is.null(dim(data)))) {
       if (mvn_test == "mardia") {
-        mvnResult = mardia(data, use_population = covariance, tol = tol)
+        mvnResult = mardia(data, use_population = use_population, tol = tol)
         
       }
       
       if (mvn_test == "hz") {
-        mvnResult = hz(data, use_population = covariance, tol = tol)
+        mvnResult = hz(data, use_population = use_population, tol = tol)
         
       }
       
@@ -325,7 +355,7 @@ mvn <- function(data,
       if (mvn_test == "mardia") {
         mvnResult = lapply(splitData,
                            mardia,
-                           use_population = covariance,
+                           use_population = use_population,
                            tol = tol)
         
       }
@@ -333,7 +363,7 @@ mvn <- function(data,
       if (mvn_test == "hz") {
         mvnResult = lapply(splitData,
                            hz,
-                           use_population = covariance,
+                           use_population = use_population,
                            tol = tol)
         
       }
@@ -429,7 +459,7 @@ mvn <- function(data,
         mutate(
           Statistic = round(Statistic, 3),
           p.value = ifelse(p.value < 0.001, "<0.001", round(p.value, 3)),
-          MVN = ifelse(p.value > 0.05, "✓ Normal", "✗ Not normal")
+          MVN = ifelse(p.value > 0.05, "\u2713 Normal", "\u2717 Not normal")
         )
       
       
@@ -440,7 +470,7 @@ mvn <- function(data,
         mutate(
           Statistic = round(Statistic, 3),
           p.value = ifelse(p.value < 0.001, "<0.001", round(p.value, 3)),
-          Normality = ifelse(p.value > 0.05, "✓ Normal", "✗ Not normal")
+          Normality = ifelse(p.value > 0.05, "\u2713 Normal", "\u2717 Not normal")
           
         )
       
@@ -510,7 +540,7 @@ mvn <- function(data,
         mutate(
           Statistic = round(Statistic, 3),
           p.value = ifelse(p.value < 0.001, "<0.001", round(p.value, 3)),
-          MVN = ifelse(p.value > 0.05, "✓ Normal", "✗ Not normal")
+          MVN = ifelse(p.value > 0.05, "\u2713 Normal", "\u2717 Not normal")
           
         )
       
@@ -518,7 +548,7 @@ mvn <- function(data,
         mutate(
           Statistic = round(Statistic, 3),
           p.value = ifelse(p.value < 0.001, "<0.001", round(p.value, 3)),
-          Normality = ifelse(p.value > 0.05, "✓ Normal", "✗ Not normal")
+          Normality = ifelse(p.value > 0.05, "\u2713 Normal", "\u2717 Not normal")
           
         )
       

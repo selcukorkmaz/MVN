@@ -10,25 +10,20 @@ royston(data, tol = 1e-08)
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
 
 \item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.}
-
-\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator (\eqn{(n-1)/n * cov}), otherwise uses the sample covariance. Default is \code{TRUE}.}
 }
 \value{
-A data frame with one row containing:
-\describe{
-  \item{Test}{Name of the test ("Royston").}
-  \item{H}{Royston test statistic (numeric).}
-  \item{p.value}{P-value from a chi-square approximation (numeric).}
-}
+A data frame with one row containing the test name (\code{Test}), the Royston test statistic (\code{Statistic}),
+and the associated p-value (\code{p.value}) from a chi-square approximation.
 }
 \description{
 Performs Royston’s test for multivariate normality by combining univariate W-statistics
-(Shapiro–Wilk or Shapiro–Francia) across variables and adjusting for correlation structure.
+(Shapiro–Wilk or Shapiro–Francia) across variables and adjusting for the correlation structure.
 }
 \examples{
 \dontrun{
-data = iris[1:50, 1:4]
+data <- iris[1:50, 1:4]
 royston_result <- royston(data)
 royston_result
 }
+
 }

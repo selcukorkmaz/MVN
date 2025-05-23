@@ -2,7 +2,7 @@
 % Please edit documentation in R/doornik_hansen.R
 \name{doornik_hansen}
 \alias{doornik_hansen}
-\title{Doornik–Hansen Test for Multivariate Normality}
+\title{Doornik-Hansen Test for Multivariate Normality}
 \usage{
 doornik_hansen(data)
 }
@@ -10,22 +10,21 @@ doornik_hansen(data)
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
 }
 \value{
-A data frame with one row containing:
-\describe{
-  \item{Test}{Name of the test ("Doornik–Hansen").}
-  \item{E}{Doornik–Hansen test statistic (numeric).}
-  \item{df}{Degrees of freedom (numeric).}
-  \item{p.value}{P-value from a chi-square approximation (numeric).}
-}
+A data frame with one row containing the following columns:
+\code{Test}, the name of the test ("Doornik-Hansen");
+\code{Statistic}, the value of the test statistic;
+\code{df}, the degrees of freedom;
+and \code{p.value}, the p-value from a chi-square approximation.
 }
 \description{
-Performs the Doornik–Hansen omnibus test by transforming data to approximate normality
-and combining skewness and kurtosis measures.
+Performs the Doornik–Hansen omnibus test by transforming the data to approximate normality
+and combining skewness and kurtosis measures to test for multivariate normality.
 }
 \examples{
 \dontrun{
-data = iris[1:50, 1:4]
+data <- iris[1:50, 1:4]
 dh_result <- doornik_hansen(data)
 dh_result
 }
+
 }

@@ -8,40 +8,44 @@ multivariate_diagnostic_plot(
   data,
   type = c("qq", "persp", "contour"),
   tol = 1e-25,
-  covariance = TRUE
+  use_population = TRUE
 )
 }
 \arguments{
 \item{data}{A numeric vector, matrix, or data frame. Non-numeric columns are dropped
-with a warning; incomplete rows are removed. Must contain exactly two numeric variables.}
+with a warning; incomplete rows are removed. The input must contain exactly two numeric variables.}
 
-\item{type}{Character; one of \code{"qq"} (Mahalanobis Q–Q plot), \code{"persp"} (3D KDE surface),
-or \code{"contour"} (2D KDE contour). Default: \code{"qq"}.}
+\item{type}{Character string specifying the type of plot to generate.
+Must be one of \code{"qq"} (Mahalanobis Q-Q plot), \code{"persp"} (3D KDE surface),
+or \code{"contour"} (2D KDE contour). Default is \code{"qq"}.}
 
-\item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.}
+\item{tol}{Numeric tolerance for matrix inversion passed to \code{solve()}. Default is \code{1e-25}.}
 
-\item{covariance}{Logical; if \code{TRUE}, scales the sample covariance by \code{(n-1)/n} for a robust estimate.
-Default: \code{TRUE}.}
+\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.}
 }
 \value{
-If \code{type = "qq"}, a \code{ggplot} object; otherwise, a \code{plotly} figure widget.
+If \code{type = "qq"}, returns a \code{ggplot2} object representing a Mahalanobis Q-Q plot.
+If \code{type = "persp"} or \code{"contour"}, returns an interactive \code{plotly} widget
+displaying the KDE surface or contour, respectively.
 }
 \description{
-Generates either a Mahalanobis Q–Q plot, an interactive 3D KDE surface,
-or an interactive 2D KDE contour for exactly two numeric variables.
+Generates either a Mahalanobis Q-Q plot, an interactive 3D kernel density surface plot,
+or a 2D kernel density contour plot for exactly two numeric variables. The function is intended
+for assessing multivariate normality or exploring the bivariate distribution of the input data.
 }
 \examples{
 \dontrun{
-  library(MASS)
-  data(iris)
-  # Mahalanobis Q–Q plot
-  multivariate_diagnostic_plot(iris[,1:2], type = "qq")
+library(MASS)
+data(iris)
 
-  # 3D KDE surface
-  multivariate_diagnostic_plot(iris[,1:2], type = "persp")
+# Mahalanobis Q-Q plot
+multivariate_diagnostic_plot(iris[, 1:2], type = "qq")
 
-  # Contour plot
-  multivariate_diagnostic_plot(iris[,1:2], type = "contour")
+# 3D KDE surface
+multivariate_diagnostic_plot(iris[, 1:2], type = "persp")
+
+# 2D KDE contour
+multivariate_diagnostic_plot(iris[, 1:2], type = "contour")
 }
 
 }

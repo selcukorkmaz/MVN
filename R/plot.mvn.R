@@ -1,66 +1,48 @@
-library(MVN)
-
-
-result = mvn(
-  data = iris[-4],
-  subset = "Species",
-  mvn_test = "hz",
-  univariate_test = "AD",
-  multivariate_outlier_method = "adj",
-  show_outliers = TRUE,
-  show_new_data = TRUE
-)
-
-
-result$descriptives %>%
-  mutate(Variable = rownames(result$descriptives))
-
-
-
-
-
-
-
-
-print.mvn <- function(x, ...) {
-  cat("Multivariate Normality Test Results:\n")
-  print(x$multivariate_normality)
-  cat("\nUnivariate Normality Test Results:\n")
-  print(x$univariate_normality)
-  invisible(x)
-}
-
-print.mvn(result)
-
+#' Plot Diagnostics for Multivariate Normality Analysis
+#'
+#' Generates diagnostic plots for objects of class \code{mvn}, including multivariate Q-Q plots,
+#' 3D or contour kernel density plots, univariate plots (e.g., Q-Q, histograms, boxplots),
+#' and multivariate outlier detection plots. If a grouping variable (subset) was used in the
+#' \code{\link{mvn}} function, plots will be generated separately for each group.
+#'
+#' @param x An object of class \code{mvn}, as returned by the \code{\link{mvn}} function.
+#' @param ... Additional arguments passed to internal plotting functions:
+#'   \code{diagnostic} (\code{"multivariate"}, \code{"univariate"}, \code{"outlier"}),
+#'   \code{type} (e.g., \code{"qq"}, \code{"boxplot"}, \code{"persp"}),
+#'   \code{interactive} (logical; use \pkg{plotly}), and
+#'   \code{outlier_method} (\code{"adj"}, \code{"quan"}).
+#'
+#' @return This function is called for its side effect of producing plots. It does not return a value.
+#'
+#' @examples
+#' \dontrun{
+#' data <- iris[1:4]
+#' result <- mvn(data)
+#'
+#' plot(result, diagnostic = "multivariate", type = "qq")
+#' plot(result, diagnostic = "univariate", type = "boxplot")
+#' plot(result, diagnostic = "outlier", outlier_method = "adj")
+#' }
+#'
+#' @importFrom ggplot2 ggtitle
+#' @importFrom stringr str_to_upper str_to_title
+#' @importFrom plotly layout
+#' @method plot mvn
 #' @export
-tidy.mvn <- function(x,
-                     type = c("multivariate", "univariate", "descriptives"),
-                     ...) {
-  type <- match.arg(type)
-  switch(
-    type,
-    multivariate = x$multivariate_normality,
-    univariate = x$univariate_normality,
-    descriptives = x$descriptives
-  )
-}
-
-tidy.mvn(result, type = c("multivariate", "univariate", "descriptives"))
-
-
-
-#' @export
-plot.mvn <- function(x,
-                     diagnostic = c("multivariate", "univariate", "outlier"),
-                     type = NULL, interactive = FALSE, outlier_method = "adj"
-                     ) {
-  df = x$data
+plot.mvn <- function(x, ...) {
+  args <- list(...)
   
-  diagnostic <- match.arg(diagnostic)
+  diagnostic <- match.arg(if (is.null(args$diagnostic)) "multivariate" else args$diagnostic,
+                          c("multivariate", "univariate", "outlier"))
+  type <- if (is.null(args$type)) NULL else args$type
+  interactive <- if (is.null(args$interactive)) FALSE else args$interactive
+  outlier_method <- if (is.null(args$outlier_method)) "adj" else args$outlier_method
+  
+  df = x$data
   
   # ---- MULTIVARIATE PLOT ----
   if (diagnostic == "multivariate") {
-
+    
     if (is.null(x$subset)) {
       print(multivariate_diagnostic_plot(x$data, type = type))  # also needs print()
     } else {
@@ -71,25 +53,25 @@ plot.mvn <- function(x,
       if(type == "qq"){
         
         title = "Mahalanobis Q-Q plot for"
-      
-      invisible(
-        mapply(
-          function(df, group) {
-            p <- multivariate_diagnostic_plot(df, type = type)
-            p <- p + ggtitle(paste(title, group))  # modify title here
-            print(p)
-          },
-          splitData,
-          group_names
+        
+        invisible(
+          mapply(
+            function(df, group) {
+              p <- multivariate_diagnostic_plot(df, type = type)
+              p <- p + ggtitle(paste(title, group))  # modify title here
+              print(p)
+            },
+            splitData,
+            group_names
+          )
         )
-      )
-      
+        
       }else{
         
         if(type == "persp"){
-        
-        title = "3D perspective plot for"
-        
+          
+          title = "3D perspective plot for"
+          
         }
         
         if(type == "contour"){
@@ -97,7 +79,7 @@ plot.mvn <- function(x,
           title = "Contour plot for"
           
         }
-      
+        
         invisible(
           mapply(
             function(df, group) {
@@ -131,17 +113,17 @@ plot.mvn <- function(x,
       
       if(type == "qq"){
         
-        plot_name <- paste0(str_to_upper(type)," plots")
+        plot_name <- paste0(stringr::str_to_upper(type)," plots")
         
       }
       
       else if(type == "scatter"){
         
-        plot_name <- paste0(str_to_title(type)," plots")
+        plot_name <- paste0(stringr::str_to_title(type)," plots")
         
       }else{
         
-        plot_name <- paste0(str_to_title(type),"s")
+        plot_name <- paste0(stringr::str_to_title(type),"s")
         
       }
       
@@ -196,16 +178,9 @@ plot.mvn <- function(x,
     }
     
     
-    # return(invisible(NULL))  # nothing visible printed to console
-    
   }
   
   
   
 }
-
-
-
-plot.mvn(result, diagnostic = "outlier", outlier_method = "adj", interactive = TRUE)
-
 

@@ -1,27 +1,23 @@
 #' Descriptive Statistics for Numeric Data
 #'
-#' Computes key descriptive statistics for each numeric variable in a data frame, matrix, or vector.
+#' Computes key descriptive statistics for each numeric variable in a vector, matrix, or data frame.
 #'
 #' @param data A numeric vector, matrix, or data frame with observations in rows and variables in columns.
-#' @return A data frame where each row corresponds to a variable and columns are:
-#'   \describe{
-#'     \item{n}{Number of non-missing observations.}
-#'     \item{Mean}{Arithmetic mean.}
-#'     \item{Std.Dev}{Standard deviation.}
-#'     \item{Median}{Median.}
-#'     \item{Min}{Minimum.}
-#'     \item{Max}{Maximum.}
-#'     \item{`25th`}{First quartile.}
-#'     \item{`75th`}{Third quartile.}
-#'     \item{Skew}{Sample skewness (moments::skewness).}
-#'     \item{Kurtosis}{Sample kurtosis (moments::kurtosis).}
-#'   }
+#'
+#' @return A data frame where each row corresponds to a variable and each column represents a summary statistic:
+#' number of non-missing observations (\code{n}), arithmetic mean (\code{Mean}),
+#' standard deviation (\code{Std.Dev}), median (\code{Median}), minimum (\code{Min}),
+#' maximum (\code{Max}), first quartile (\code{25th}), third quartile (\code{75th}),
+#' sample skewness (\code{Skew}, from \code{moments::skewness}), and sample kurtosis
+#' (\code{Kurtosis}, from \code{moments::kurtosis}).
+#'
 #' @examples
 #' \dontrun{
-#' data = iris[1:4]
+#' data <- iris[1:4]
 #' descriptives(data)
 #' }
-#' @importFrom stats sd median quantile
+#'
+#' @importFrom stats sd median quantile setNames
 #' @importFrom moments skewness kurtosis
 #' @export
 descriptives <- function(data) {

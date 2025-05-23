@@ -2,32 +2,31 @@
 % Please edit documentation in R/hz.R
 \name{hz}
 \alias{hz}
-\title{Henze–Zirkler Test for Multivariate Normality}
+\title{Henze-Zirkler Test for Multivariate Normality}
 \usage{
-hz(data, use_population = TRUE, tol = 1e-08)
+hz(data, use_population = TRUE, tol = 1e-25)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
 
-\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator (\eqn{(n-1)/n\times\cov}), otherwise uses the sample covariance. Default is \code{TRUE}.}
+\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.}
 
-\item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.}
+\item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.}
 }
 \value{
-A data frame with one row, containing:
-\describe{
-  \item{Test}{Name of the test ("Henze-Zirkler").}
-  \item{HZ}{Henze–Zirkler test statistic (numeric).}
-  \item{p.value}{P-value computed from a log-normal approximation (numeric).}
-}
+A data frame with one row, containing the following columns:
+\code{Test}, the name of the test ("Henze-Zirkler"); 
+\code{HZ}, the test statistic (numeric); 
+and \code{p.value}, the p-value computed from a log-normal approximation.
 }
 \description{
 Performs Henze and Zirkler's test to assess multivariate normality based on a log-normal approximation of the test statistic.
 }
 \examples{
 \dontrun{
-data = iris[1:50, 1:4]
+data <- iris[1:50, 1:4]
 hz_result <- hz(data)
 hz_result
 }
+
 }

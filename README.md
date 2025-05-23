@@ -1,25 +1,98 @@
 # MVN: An R Package for Assessing Multivariate Normality
-[![Build Status](https://travis-ci.org/selcukorkmaz/MVN.svg?branch=master)](https://travis-ci.org/selcukorkmaz/MVN) [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/MVN?color=red)](https://CRAN.R-project.org/package=MVN) [![rstudio mirror downloads](http://cranlogs.r-pkg.org/badges/last-day/MVN?color=yellowgreen)](https://github.com/r-hub/cranlogs.app) [![rstudio mirror downloads](http://cranlogs.r-pkg.org/badges/MVN?color=yellow)](https://github.com/r-hub/cranlogs.app) [![rstudio mirror downloads](http://cranlogs.r-pkg.org/badges/grand-total/MVN)](https://github.com/r-hub/cranlogs.app) 
+
+[![Build Status](https://app.travis-ci.com/selcukorkmaz/MVN.svg?branch=master)](https://app.travis-ci.com/selcukorkmaz/MVN)
+[![CRAN Status](https://www.r-pkg.org/badges/version/MVN?color=red)](https://CRAN.R-project.org/package=MVN)
+[![CRAN Downloads (last day)](https://cranlogs.r-pkg.org/badges/last-day/MVN?color=yellowgreen)](https://cranlogs.r-pkg.org/)
+[![CRAN Downloads (last month)](https://cranlogs.r-pkg.org/badges/MVN?color=yellow)](https://cranlogs.r-pkg.org/)
+[![CRAN Downloads (total)](https://cranlogs.r-pkg.org/badges/grand-total/MVN)](https://cranlogs.r-pkg.org/)
+
+---
+
+## Overview
+
+The MVN R package provides a comprehensive framework for assessing multivariate normality, a key assumption in many parametric multivariate statistical methods such as:
+
+- MANOVA
+- Linear Discriminant Analysis
+- Principal Component Analysis
+- Canonical Correlation Analysis
+
+Multivariate normality assessment is critical, and no single method is universally optimal. MVN combines several numerical and graphical tools to offer reliable evaluations across diverse scenarios.
+
+---
+
+## Features
+
+- **Multivariate Normality Tests:**
+  - Mardia's Test
+  - Henze-Zirkler’s Test
+  - Royston’s Test
+  - Doornik-Hansen's Test
+  - Energy Test
+
+- **Graphical Diagnostics:**
+  - Chi-square Q-Q Plots
+  - 3D Perspective Plots
+  - Contour Plots
+
+- **Multivariate Outlier Detection:**
+  - Robust Mahalanobis distance-based methods
+
+- **Univariate Normality Checks:**
+  - Multiple tests and visualizations for marginal distributions
+
+- **Data Transformation Options:**
+  - Logarithmic
+  - Square Root
+  - Square
+  - Box-Cox (with lambda selection)
+
+- **Descriptive Statistics Output**
+
+- **Subset (grouped) analysis support**
+
+---
+
+## Installation
+
+To install the latest version from **CRAN**:
+
+```r
+install.packages("MVN")
+```
+
+## To install the development version from GitHub:
+
+```r
+devtools::install_github("selcukorkmaz/MVN")
+```
+
+## Usage Example
+
+```r
+library(MVN)
+
+# Run MVN tests and diagnostics on iris data
+result <- mvn(
+  data = iris[1:4],
+  mvn_test = "hz",
+  univariate_test = "AD",
+  multivariate_outlier_method = "adj",
+  show_outliers = TRUE,
+  show_new_data = TRUE
+)
+
+# View results
+summary(result)
+```
+
+## Web Application
+
+A web-based graphical user interface is available here:
+http://biosoft.erciyes.edu.tr/app/MVN
 
 
-Assessing the assumption of multivariate normality is required by many parametric multivariate statistical methods, such as MANOVA, linear discriminant analysis, principal component analysis, canonical correlation, etc. It is important to assess multivariate normality in order to proceed with such statistical methods. There are many analytical methods proposed for checking multivariate normality. However, deciding which method to use is a challenging process, since each method may give different results under certain conditions. Hence, we may say that there is no best method, which is valid under any condition, for normality checking. In addition to numerical results, it is very useful to use graphical methods to decide on multivariate normality. Combining the numerical results from several methods with graphical approaches can be useful and provide more reliable decisions. 
+## Citation
 
-Here, we present an R package, MVN, to assess multivariate normality. It contains the five most widely used multivariate normality tests, including Mardia’s, Henze-Zirkler’s, Royston’s, Doornik-Hansen's and Energy, and graphical approaches, including chi-square Q-Q, perspective and contour plots. It also includes two multivariate outlier detection methods, which are based on robust Mahalanobis distances. This package also offers functions to check the univariate normality of marginal distributions through both tests and plots. Furthermore, it calculates descriptive statistics and has options to apply data transformation, including logarithmic, square and square root. We also provide a user-friendly web application of the package.
-
-MVN main paper: http://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf
-
-MVN R package: http://cran.r-project.org/web/packages/MVN/index.html
-
-MVN web-tool: http://www.biosoft.hacettepe.edu.tr/MVN/
-
-Installation
-------------
-To install from CRAN:
-
-    install.packages("MVN")
-    
-
-To install from github: 
-    
-    devtools::install_github('selcukorkmaz/MVN')
-
+Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014; 6(2):151-162.
+https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf

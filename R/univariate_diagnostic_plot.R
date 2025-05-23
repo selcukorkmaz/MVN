@@ -5,6 +5,7 @@
 #'
 #' @param data A numeric vector, matrix, or data frame with observations in rows and variables in columns.
 #' @param type Character; type of plot. One of: "qq", "histogram", "boxplot", "scatter". Default selects the first.
+#' @param title Character; plot title.
 #' @param interactive Logical; if TRUE, renders the plot interactively using plotly.
 #'
 #' @examples
@@ -28,7 +29,8 @@
 #' @export
 
 univariate_diagnostic_plot <- function(data,
-                                       type  = c("qq", "histogram", "boxplot", "scatter"), main = NULL,
+                                       type  = c("qq", "histogram", "boxplot", "scatter"), 
+                                       title = NULL,
                                        interactive = FALSE) {
   type <- match.arg(type)
   
@@ -132,7 +134,7 @@ univariate_diagnostic_plot <- function(data,
           hjust = 0.5
         )
       )+
-      ggtitle(main)  
+      ggtitle(title)  
     
     
   } else if (type == "qq") {
@@ -199,7 +201,7 @@ univariate_diagnostic_plot <- function(data,
           hjust = 0.5
         )
       )+
-      ggtitle(main)  
+      ggtitle(title)  
     
     
   } else if (type == "boxplot") {
@@ -237,7 +239,7 @@ univariate_diagnostic_plot <- function(data,
           hjust = 0.5
         )
       )+
-      ggtitle(main)  
+      ggtitle(title)  
     
     
     
@@ -292,7 +294,7 @@ univariate_diagnostic_plot <- function(data,
           hjust = 0.5
         )
       )+
-      ggtitle(main)  
+      ggtitle(title)  
     
     
   }

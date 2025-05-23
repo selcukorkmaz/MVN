@@ -15,24 +15,40 @@ mv_outlier(
 )
 }
 \arguments{
-\item{data}{A numeric matrix or data frame with observations in rows and variables in columns (p ≥ 2).}
+\item{data}{A numeric matrix or data frame with observations in rows and at least two numeric columns.}
 
-\item{qqplot}{Logical; if TRUE, produces a Chi-Square QQ-plot of robust distances. Default is TRUE.}
+\item{outlier}{Logical; if \code{TRUE}, includes the Mahalanobis distance values and outlier classification in the output. 
+If \code{FALSE}, suppresses this component. Default is \code{TRUE}.}
 
-\item{alpha}{Numeric; significance level for the adjusted cutoff method. Ignored if method="quan". Default is 0.05.}
+\item{qqplot}{Logical; if \code{TRUE}, a Chi-Square Q–Q plot is generated to visualize outlier detection. Default is \code{TRUE}.}
 
-\item{method}{Character; outlier detection method, either "quan" (chi-square 97.5% cutoff) or "adj" (adjusted cutoff via arw_adjustment). Default is "quan".}
+\item{alpha}{Numeric; significance level used for the adjusted cutoff method (only applies if \code{method = "adj"}). Default is \code{0.05}.}
 
-\item{label}{Logical; if TRUE and qqplot=TRUE, labels identified outliers on the QQ-plot. Default is TRUE.}
+\item{method}{Character string specifying the outlier detection method. Must be either \code{"quan"} (quantile-based cutoff)
+or \code{"adj"} (adjusted cutoff via ARW). Default is \code{"quan"}.}
 
-\item{title}{Character; title title for QQ-plot. Default is NULL.}
+\item{label}{Logical; if \code{TRUE} and \code{qqplot = TRUE}, labels the detected outliers in the plot. Default is \code{TRUE}.}
+
+\item{title}{Optional character string specifying the title for the Q–Q plot. Default is \code{"Chi-Square Q-Q Plot"}.}
 }
 \value{
-A list with two elements:
-  - outlier: A data frame of all observations sorted by descending MD, with a logical Outlier flag.
-  - newData: A subset of the original data with non-outliers only.
+A list containing the following components:
+\code{outlier}, a data frame of Mahalanobis distances with observation IDs and outlier flags (if \code{outlier = TRUE});
+\code{qq_outlier_plot}, a ggplot object of the Mahalanobis Q–Q plot (if \code{qqplot = TRUE});
+and \code{newData}, a data frame of non-outlier observations.
 }
 \description{
-Computes robust Mahalanobis distances for multivariate data using Minimum Covariance Determinant (MCD),
-flags outliers by either a chi-square quantile or an adjusted cutoff, and optionally displays a QQ-plot.
+Computes robust Mahalanobis distances for multivariate data using the Minimum Covariance Determinant (MCD)
+estimator, flags outliers based on either a chi-square quantile cutoff or an adjusted cutoff using the
+Atkinson–Riani–Welsh (ARW) method, and optionally generates a Mahalanobis Q–Q plot.
+}
+\examples{
+\dontrun{
+data <- iris[, 1:4]
+res <- mv_outlier(data, method = "adj", alpha = 0.025)
+res$outlier
+res$qq_outlier_plot
+head(res$newData)
+}
+
 }

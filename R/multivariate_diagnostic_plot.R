@@ -1,49 +1,48 @@
 #' Plot Multivariate Normal Diagnostics and Bivariate Kernel Density
 #'
-#' Generates either a Mahalanobis Q–Q plot, an interactive 3D KDE surface,
-#' or an interactive 2D KDE contour for exactly two numeric variables.
+#' Generates either a Mahalanobis Q-Q plot, an interactive 3D kernel density surface plot,
+#' or a 2D kernel density contour plot for exactly two numeric variables. The function is intended
+#' for assessing multivariate normality or exploring the bivariate distribution of the input data.
 #'
-#' @param data
-#'   A numeric vector, matrix, or data frame. Non-numeric columns are dropped
-#'   with a warning; incomplete rows are removed. Must contain exactly two numeric variables.
-#' @param type
-#'   Character; one of \code{"qq"} (Mahalanobis Q–Q plot), \code{"persp"} (3D KDE surface),
-#'   or \code{"contour"} (2D KDE contour). Default: \code{"qq"}.
-#' @param tol Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.
-#' @param covariance
-#'   Logical; if \code{TRUE}, scales the sample covariance by \code{(n-1)/n} for a robust estimate.
-#'   Default: \code{TRUE}.
+#' @param data A numeric vector, matrix, or data frame. Non-numeric columns are dropped
+#' with a warning; incomplete rows are removed. The input must contain exactly two numeric variables.
+#' @param type Character string specifying the type of plot to generate.
+#' Must be one of \code{"qq"} (Mahalanobis Q-Q plot), \code{"persp"} (3D KDE surface),
+#' or \code{"contour"} (2D KDE contour). Default is \code{"qq"}.
+#' @param tol Numeric tolerance for matrix inversion passed to \code{solve()}. Default is \code{1e-25}.
+#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
 #'
-#' @return
-#'   If \code{type = "qq"}, a \code{ggplot} object; otherwise, a \code{plotly} figure widget.
+#' @return If \code{type = "qq"}, returns a \code{ggplot2} object representing a Mahalanobis Q-Q plot.
+#' If \code{type = "persp"} or \code{"contour"}, returns an interactive \code{plotly} widget
+#' displaying the KDE surface or contour, respectively.
 #'
 #' @examples
 #' \dontrun{
-#'   library(MASS)
-#'   data(iris)
-#'   # Mahalanobis Q–Q plot
-#'   multivariate_diagnostic_plot(iris[,1:2], type = "qq")
+#' library(MASS)
+#' data(iris)
 #'
-#'   # 3D KDE surface
-#'   multivariate_diagnostic_plot(iris[,1:2], type = "persp")
+#' # Mahalanobis Q-Q plot
+#' multivariate_diagnostic_plot(iris[, 1:2], type = "qq")
 #'
-#'   # Contour plot
-#'   multivariate_diagnostic_plot(iris[,1:2], type = "contour")
+#' # 3D KDE surface
+#' multivariate_diagnostic_plot(iris[, 1:2], type = "persp")
+#'
+#' # 2D KDE contour
+#' multivariate_diagnostic_plot(iris[, 1:2], type = "contour")
 #' }
 #'
 #' @importFrom graphics persp contour
-#' @importFrom stats complete.cases
+#' @importFrom stats complete.cases cov qchisq
 #' @importFrom MASS kde2d
 #' @importFrom ggplot2 ggplot aes geom_point geom_abline labs theme_minimal theme element_text element_line element_rect margin
 #' @importFrom plotly plot_ly layout
 #' @importFrom viridis viridis
 #' @export
 
-
 multivariate_diagnostic_plot <- function(data,
                      type = c("qq", "persp", "contour"),
                      tol = 1e-25,
-                     covariance = TRUE) {
+                     use_population = TRUE) {
   # Coerce and validate data
   df <- as.data.frame(data)
   nums <- vapply(df, is.numeric, logical(1))
@@ -71,7 +70,7 @@ multivariate_diagnostic_plot <- function(data,
     n <- nrow(df)
     p <- ncol(df)
     
-    S <- if (covariance) {
+    S <- if (use_population) {
       ((n - 1) / n) * cov(df)
     } else {
       cov(df)
@@ -93,7 +92,7 @@ multivariate_diagnostic_plot <- function(data,
       geom_abline(intercept = 0, slope = 1,
                   linetype = "dashed", linewidth = 1, color = "#264653") +  # slate reference line
       labs(
-        title    = "Mahalanobis Q–Q Plot",
+        title    = "Mahalanobis Q-Q Plot",
         subtitle = "Squared distances vs. chi-square quantiles",
         x        = "Squared Mahalanobis Distance",
         y        = "Chi-Square Quantile"
@@ -145,10 +144,7 @@ multivariate_diagnostic_plot <- function(data,
   } 
   
   else if (type == "contour") {
-    
-
-    library(plotly)
-    library(viridis)
+  
     
     fig_contour <- plot_ly(
       x          = ~kde$x,

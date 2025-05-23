@@ -7,7 +7,7 @@
 univariate_diagnostic_plot(
   data,
   type = c("qq", "histogram", "boxplot", "scatter"),
-  main = NULL,
+  title = NULL,
   interactive = FALSE
 )
 }
@@ -15,6 +15,8 @@ univariate_diagnostic_plot(
 \item{data}{A numeric vector, matrix, or data frame with observations in rows and variables in columns.}
 
 \item{type}{Character; type of plot. One of: "qq", "histogram", "boxplot", "scatter". Default selects the first.}
+
+\item{title}{Character; plot title.}
 
 \item{interactive}{Logical; if TRUE, renders the plot interactively using plotly.}
 }

@@ -3,21 +3,20 @@
 #' Implements the ARW procedure to compute an adjusted cutoff for squared Mahalanobis distances,
 #' then re-estimates location and scatter excluding points beyond the cutoff.
 #'
-#' @param x Numeric matrix or data frame of observations (rows) by variables (columns), p ≥ 2.
-#' @param m0 Numeric vector of initial location estimates (length p).
-#' @param c0 Numeric covariance matrix (p × p) corresponding to m0.
-#' @param alpha Numeric; significance level for chi-square threshold. Defaults to 0.05 if missing.
-#' @param pcrit Numeric; minimal proportion for adjusted cutoff. If missing, computed as:
-#'   if p ≤ 10: (0.24 − 0.003 p)/√n, else (0.252 − 0.0018 p)/√n.
-#' @return A list with components:
-#'   \describe{
-#'     \item{m}{Updated location vector after excluding outliers.}
-#'     \item{c}{Updated covariance matrix after exclusion.}
-#'     \item{cn}{Adjusted cutoff on Mahalanobis distances.}
-#'     \item{w}{Logical vector indicating observations with distance ≤ cn.}
-#'   }
+#' @param x A numeric matrix or data frame of observations (rows) by variables (columns), with at least 2 columns.
+#' @param m0 A numeric vector of initial location estimates (length equal to number of columns in \code{x}).
+#' @param c0 A numeric covariance matrix corresponding to \code{m0}.
+#' @param alpha Numeric; significance level for the chi-square threshold. Defaults to 0.05 if not provided.
+#' @param pcrit Numeric; minimal proportion for the adjusted cutoff. If not provided, it is computed as:
+#'   \eqn{(0.24 - 0.003p)/\sqrt{n}} if \eqn{p \leq 10}, or \eqn{(0.252 - 0.0018p)/\sqrt{n}} if \eqn{p > 10}.
+#'
+#' @return A list with the following components:
+#' \code{m}, the updated location vector after excluding outliers;
+#' \code{c}, the updated covariance matrix;
+#' \code{cn}, the adjusted cutoff on Mahalanobis distances;
+#' \code{w}, a logical vector indicating which observations have distance less than or equal to \code{cn}.
+#'
 #' @importFrom stats mahalanobis qchisq pchisq
-#' @noRd
 #' @export
 arw_adjustment <- function (x, m0, c0, alpha, pcrit)
 {

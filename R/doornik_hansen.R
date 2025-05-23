@@ -1,22 +1,23 @@
-#' Doornik–Hansen Test for Multivariate Normality
+#' Doornik-Hansen Test for Multivariate Normality
 #'
-#' Performs the Doornik–Hansen omnibus test by transforming data to approximate normality
-#' and combining skewness and kurtosis measures.
+#' Performs the Doornik–Hansen omnibus test by transforming the data to approximate normality
+#' and combining skewness and kurtosis measures to test for multivariate normality.
 #'
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
-#' @return A data frame with one row containing:
-#' \describe{
-#'   \item{Test}{Name of the test ("Doornik–Hansen").}
-#'   \item{E}{Doornik–Hansen test statistic (numeric).}
-#'   \item{df}{Degrees of freedom (numeric).}
-#'   \item{p.value}{P-value from a chi-square approximation (numeric).}
-#' }
+#'
+#' @return A data frame with one row containing the following columns:
+#' \code{Test}, the name of the test ("Doornik-Hansen");
+#' \code{Statistic}, the value of the test statistic;
+#' \code{df}, the degrees of freedom;
+#' and \code{p.value}, the p-value from a chi-square approximation.
+#'
 #' @examples
 #' \dontrun{
-#' data = iris[1:50, 1:4]
+#' data <- iris[1:50, 1:4]
 #' dh_result <- doornik_hansen(data)
 #' dh_result
 #' }
+#'
 #' @importFrom stats complete.cases cov pchisq sd
 #' @importFrom moments skewness kurtosis
 #' @export
@@ -28,7 +29,7 @@ doornik_hansen <- function(data) {
     warning("Dropping non-numeric columns: ", paste(names(df)[!num_cols], collapse=", "))
     df <- df[, num_cols, drop=FALSE]
   }
-  if (ncol(df) < 2) stop("Need at least two numeric variables for Doornik–Hansen test.")
+  if (ncol(df) < 2) stop("Need at least two numeric variables for Doornik-Hansen test.")
   
   # Handle missing values
   keep <- stats::complete.cases(df)

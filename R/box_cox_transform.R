@@ -1,24 +1,27 @@
 #' Box-Cox Transformation for Numeric Data
 #'
-#' Applies a Box-Cox power transformation to each numeric variable in the input, estimating
-#' or rounding the transformation parameter (lambda) via \\code{car::powerTransform}.
+#' Applies a Box-Cox power transformation to each numeric variable in the input,
+#' estimating or rounding the transformation parameter (lambda) using \code{car::powerTransform}.
 #'
 #' @param data A numeric vector, matrix, or data frame with observations in rows and variables in columns.
-#' @param type Character; either \\code{"optimal"} (use the estimated lambda) or \\code{"rounded"} (use the rounded lambda). Default is both, with the first matched.
-#' @return A list with components:
-#' \describe{
-#'   \item{data}{A data frame (or vector) of the transformed variables.}
-#'   \item{lambda}{A numeric vector of the lambda values applied to each variable.}
-#' }
+#' @param type Character string; either \code{"optimal"} (use the estimated lambda) or \code{"rounded"} (use the rounded lambda).
+#' Default is \code{"optimal"}.
+#'
+#' @return A list with two components:
+#' \code{data}, a data frame (or vector) of transformed variables;
+#' and \code{lambda}, a numeric vector of the lambda values applied to each variable.
+#'
 #' @examples
 #' \dontrun{
-#' data = iris[1:4]
+#' data <- iris[1:4]
 #' # Apply Box-Cox to the first 4 numeric columns
 #' res <- box_cox_transform(data, type = "rounded")
 #' head(res$data)
 #' res$lambda
 #' }
-#' @importFrom car powerTransform 
+#'
+#' @importFrom car powerTransform
+#' @importFrom stats complete.cases
 #' @export
 box_cox_transform <- function(data, type = c("optimal", "rounded")) {
   type <- match.arg(type)

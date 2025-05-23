@@ -1,25 +1,26 @@
-#' Henze–Zirkler Test for Multivariate Normality
+#' Henze-Zirkler Test for Multivariate Normality
 #'
 #' Performs Henze and Zirkler's test to assess multivariate normality based on a log-normal approximation of the test statistic.
 #'
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
-#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator (\eqn{(n-1)/n\times\cov}), otherwise uses the sample covariance. Default is \code{TRUE}.
-#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.
-#' @return A data frame with one row, containing:
-#' \describe{
-#'   \item{Test}{Name of the test ("Henze-Zirkler").}
-#'   \item{HZ}{Henze–Zirkler test statistic (numeric).}
-#'   \item{p.value}{P-value computed from a log-normal approximation (numeric).}
-#' }
+#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
+#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.
+#'
+#' @return A data frame with one row, containing the following columns:
+#' \code{Test}, the name of the test ("Henze-Zirkler"); 
+#' \code{HZ}, the test statistic (numeric); 
+#' and \code{p.value}, the p-value computed from a log-normal approximation.
+#'
 #' @examples
 #' \dontrun{
-#' data = iris[1:50, 1:4]
+#' data <- iris[1:50, 1:4]
 #' hz_result <- hz(data)
 #' hz_result
 #' }
+#'
 #' @importFrom stats cov complete.cases plnorm
 #' @export
-hz <- function(data, use_population = TRUE, tol = 1e-8) {
+hz <- function(data, use_population = TRUE, tol = 1e-25) {
   # Convert to data frame and drop non-numeric columns
   df <- as.data.frame(data)
   numeric_cols <- sapply(df, is.numeric)
@@ -28,7 +29,7 @@ hz <- function(data, use_population = TRUE, tol = 1e-8) {
     warning("Dropping non-numeric columns: ", paste(dropped, collapse = ", "))
     df <- df[, numeric_cols, drop = FALSE]
   }
-  if (ncol(df) < 2) stop("Need at least two numeric variables for Henze–Zirkler test.")
+  if (ncol(df) < 2) stop("Need at least two numeric variables for Henze-Zirkler test.")
   
   # Handle missing values
   complete_rows <- stats::complete.cases(df)

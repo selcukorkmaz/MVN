@@ -21,16 +21,16 @@ Imports:
     MASS,
     boot,
     car,
-    robustbase,
     dplyr,
     tidyr,
     purrr,
     stringr,
     tibble,
     ggplot2,
-    viridis
-Suggests: knitr, rmarkdown, BiocStyle
-VignetteBuilder: knitr
+    viridis,
+    cli,
+    energy,
+    plotly
 Collate:
     'mvn.R'
     'mardia.R'
@@ -45,6 +45,8 @@ Collate:
     'univariate_diagnostic_plot.R'
     'box_cox_transform.R'
     'arw_adjustment.R'
+    'plot.mvn.R'
+    'summary.mvn.R'
 Description:
     A suite of multivariate normality tests (Mardia, Henze–Zirkler, Royston,
     Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,

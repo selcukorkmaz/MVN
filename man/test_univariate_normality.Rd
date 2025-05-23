@@ -7,34 +7,29 @@
 test_univariate_normality(data, test = c("SW", "CVM", "Lillie", "SF", "AD"))
 }
 \arguments{
-\item{data}{A numeric vector, matrix, or data frame with observations in rows.}
+\item{data}{A numeric vector, matrix, or data frame with observations in rows and variables in columns.
+Non-numeric columns are dropped with a warning. Each column is tested individually.}
 
-\item{test}{A character string specifying the normality test to use. Choices are:
-\describe{
-  \item{"SW"}{Shapiro–Wilk (stats::shapiro.test)}
-  \item{"SF"}{Shapiro–Francia (nortest::sf.test)}
-  \item{"AD"}{Anderson–Darling (nortest::ad.test)}
-  \item{"CVM"}{Cramér–von Mises (nortest::cvm.test)}
-  \item{"Lillie"}{Lilliefors (nortest::lillie.test)}
-}
-Default is \code{c("SW", "CVM", "Lillie", "SF", "AD")}, with the first matched.}
+\item{test}{A character string specifying the normality test to use.
+Choices are: \code{"SW"} (Shapiro–Wilk), \code{"SF"} (Shapiro–Francia),
+\code{"AD"} (Anderson–Darling), \code{"CVM"} (Cramér–von Mises), and
+\code{"Lillie"} (Lilliefors test). Default is the first match from this list.}
 }
 \value{
-A data frame with columns:
-  \describe{
-    \item{Test}{Name of the test.}
-    \item{Variable}{Variable name.}
-    \item{Statistic}{Test statistic.}
-    \item{p.value}{P-value.}
-  }
+A data frame with one row per variable and the following columns:
+\code{Test}, the name of the test used;
+\code{Variable}, the name of the tested variable;
+\code{Statistic}, the test statistic;
+and \code{p.value}, the associated p-value.
 }
 \description{
-Performs common univariate normality tests on numeric variables (vector, matrix, or data frame).
+Performs one of several common univariate normality tests on each numeric variable
+in a vector, matrix, or data frame.
 }
 \examples{
 \dontrun{
-  data(iris)
-  uni_norm(iris[,1:4], test = "AD")
+data(iris)
+test_univariate_normality(iris[, 1:4], test = "AD")
 }
 
 }
