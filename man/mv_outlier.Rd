@@ -6,13 +6,12 @@
 \usage{
 mv_outlier(
   data,
+  outlier = TRUE,
   qqplot = TRUE,
   alpha = 0.05,
   method = c("quan", "adj"),
   label = TRUE,
-  position = NULL,
-  offset = 0.5,
-  main
+  title = "Chi-Square Q-Q Plot"
 )
 }
 \arguments{
@@ -26,11 +25,7 @@ mv_outlier(
 
 \item{label}{Logical; if TRUE and qqplot=TRUE, labels identified outliers on the QQ-plot. Default is TRUE.}
 
-\item{position}{Integer (1–4); text position for labels on QQ-plot. Default is 3.}
-
-\item{offset}{Numeric; text offset for labels on QQ-plot. Default is 0.5.}
-
-\item{main}{Character; main title for QQ-plot. Default is NULL.}
+\item{title}{Character; title title for QQ-plot. Default is NULL.}
 }
 \value{
 A list with two elements:

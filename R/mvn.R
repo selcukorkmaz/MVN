@@ -9,7 +9,7 @@
 #'   \code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.
 #' @param covariance Logical; for \code{"mardia"} and \code{"royston"} tests,
 #'   if \code{TRUE} uses population covariance (n denominator), else sample (n-1). Default: \code{TRUE}.
-#' @param tol Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-8}.
+#' @param tol Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.
 #' @param alpha Numeric; significance level for ARW outlier cutoff when
 #'   \code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.
 #' @param descriptives Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.
@@ -243,23 +243,12 @@ mvn <- function(data,
     }
     
     if (multivariate_outlier_method != "none") {
-      if (multivariate_outlier_method == "quan") {
-        main = "Chi-Square Q-Q Plot"
-        
-      } else{
-        main = "Adjusted Chi-Square Q-Q Plot"
-        
-      }
-      
+
       mvOutlierRes = mv_outlier(
         data,
-        qqplot = TRUE,
+        qqplot = FALSE,
         alpha = alpha,
         method = multivariate_outlier_method,
-        label = TRUE,
-        position = NULL,
-        offset = 0.5,
-        main = main
       )
       mvOutliers = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE", ]
       newData = mvOutlierRes$newData
@@ -406,24 +395,12 @@ mvn <- function(data,
       
       for (i in 1:length(name)) {
         
-        if (multivariate_outlier_method == "quan") {
-          main = paste0("Chi-Square Q-Q Plot for ", name[[i]])
-          
-        } else{
-          main = paste0("Adjusted Chi-Square Q-Q Plot for ", name[[i]])
-          
-        }
-        
         subsetData = splitData[[i]][complete.cases(splitData[[i]]), ]
         mvOutlierRes = mv_outlier(
           subsetData,
-          qqplot = TRUE,
+          qqplot = FALSE,
           alpha = alpha,
           method = multivariate_outlier_method,
-          label = TRUE,
-          position = NULL,
-          offset = 0.5,
-          main = main
         )
         mvOutliers[[i]] = mvOutlierRes$outlier[mvOutlierRes$outlier$Outlier == "TRUE", ]
         newData[[i]] = mvOutlierRes$newData[order(as.numeric(rownames(mvOutlierRes$newData))), ]
@@ -517,7 +494,7 @@ mvn <- function(data,
         mvOutliers <- mvOutliers %>%
           imap_dfr( ~ .x %>%
                       mutate(Group = .y), .id = NULL) %>%
-          select(Group, Observation, "Mahalanobis Distance")
+          select(Group, Observation, Mahalanobis.Distance)
       }
       
       
@@ -576,7 +553,7 @@ mvn <- function(data,
       
       if (show_outliers) {
         mvOutliers <- mvOutliers %>%
-          select(Observation, "Mahalanobis Distance")
+          select(Observation, Mahalanobis.Distance)
         
       }
       

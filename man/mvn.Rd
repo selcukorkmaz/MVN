@@ -35,7 +35,7 @@ mvn(
 \item{covariance}{Logical; for \code{"mardia"} and \code{"royston"} tests,
 if \code{TRUE} uses population covariance (n denominator), else sample (n-1). Default: \code{TRUE}.}
 
-\item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-8}.}
+\item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.}
 
 \item{alpha}{Numeric; significance level for ARW outlier cutoff when
 \code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.}

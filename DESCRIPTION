@@ -40,13 +40,11 @@ Collate:
     'energy.R'
     'descriptives.R'
     'test_univariate_normality.R'
-    'mvn_diagnostic_plot.R'
+    'multivariate_diagnostic_plot.R'
     'mv_outlier.R'
     'univariate_diagnostic_plot.R'
     'box_cox_transform.R'
     'arw_adjustment.R'
-    'persp_ctrl.R'
-    'contour_ctrl.R'
 Description:
     A suite of multivariate normality tests (Mardia, Henze–Zirkler, Royston,
     Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,
