@@ -1,4 +1,4 @@
-<img src="man/figures/mvn_sticker.png" align="right" width="100" height="100"/>
+<img src="man/figures/mvn_sticker.png" align="right" width="125"/>
 
 
 # MVN: An R Package for Assessing Multivariate Normality
