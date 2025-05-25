@@ -1,5 +1,7 @@
 <img src="man/figures/mvn_sticker.png" align="right" width="150"/>
 
+
+
 # MVN: An R Package for Assessing Multivariate Normality
 
 [![Build Status](https://app.travis-ci.com/selcukorkmaz/MVN.svg?branch=master)](https://app.travis-ci.com/selcukorkmaz/MVN)
