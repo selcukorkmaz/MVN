@@ -1,9 +1,8 @@
-<img src="man/figures/mvn_sticker.png" align="right" width="125"/>
+<img src="man/figures/mvn_sticker.png" align="right" width="100"/>
 
 
 # MVN: An R Package for Assessing Multivariate Normality
 
-[![Build Status](https://app.travis-ci.com/selcukorkmaz/MVN.svg?branch=master)](https://app.travis-ci.com/selcukorkmaz/MVN)
 [![CRAN Status](https://www.r-pkg.org/badges/version/MVN?color=red)](https://CRAN.R-project.org/package=MVN)
 [![CRAN Downloads (last day)](https://cranlogs.r-pkg.org/badges/last-day/MVN?color=yellowgreen)](https://cranlogs.r-pkg.org/)
 [![CRAN Downloads (last month)](https://cranlogs.r-pkg.org/badges/MVN?color=yellow)](https://cranlogs.r-pkg.org/)
