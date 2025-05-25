@@ -1,3 +1,9 @@
+utils::globalVariables(c(
+  "everything", "Variable", "Value", "Min", "Max", "Mean", "SD", 
+  "Density", "density", "Sample", "Theoretical", 
+  "q_sample", "q_theoretical", "slope", "intercept", 
+  "x", "y", "x_var", "y_var"
+))
 #' Diagnostic Plots for Univariate and Multivariate Data
 #'
 #' Generates QQ plots, histograms with density overlays, boxplots, or scatterplot matrices

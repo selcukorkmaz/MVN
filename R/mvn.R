@@ -1,3 +1,8 @@
+utils::globalVariables(c(
+  "Statistic", "p.value", "Group", "Test", "Variable", "n", "Mean",
+  "Std.Dev", "Median", "Min", "Max", "25th", "75th", "Skew", "Kurtosis",
+  "Observation", "Mahalanobis.Distance"
+))
 #' Comprehensive Multivariate Normality and Diagnostic Function
 #'
 #' Conduct multivariate normality tests, outlier detection, univariate normality tests,

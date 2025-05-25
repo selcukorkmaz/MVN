@@ -1,3 +1,4 @@
+utils::globalVariables(c("is_outlier", "distance", "chi2q"))
 #' Identify Multivariate Outliers via Robust Mahalanobis Distances
 #'
 #' Computes robust Mahalanobis distances for multivariate data using the Minimum Covariance Determinant (MCD)

@@ -1,3 +1,4 @@
+utils::globalVariables("mvnorm.e")
 #' E-Statistic Test for Multivariate Normality (Energy Test)
 #'
 #' Performs the E-statistic test for multivariate normality using a parametric bootstrap
