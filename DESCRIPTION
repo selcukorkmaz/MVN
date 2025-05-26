@@ -2,7 +2,6 @@ Package: MVN
 Type: Package
 Title: Multivariate Normality Tests
 Version: 6.0
-Date: 2025-05-20
 Authors@R: 
     c(
       person(given = "Selcuk", family = "Korkmaz", role = c("aut", "cre"),
@@ -30,7 +29,8 @@ Imports:
     viridis,
     cli,
     energy,
-    plotly
+    plotly,
+    energy
 Collate:
     'mvn.R'
     'mardia.R'

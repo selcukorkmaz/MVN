@@ -12,8 +12,7 @@
 \item{...}{Additional arguments passed to internal plotting functions:
 \code{diagnostic} (\code{"multivariate"}, \code{"univariate"}, \code{"outlier"}),
 \code{type} (e.g., \code{"qq"}, \code{"boxplot"}, \code{"persp"}),
-\code{interactive} (logical; use \pkg{plotly}), and
-\code{outlier_method} (\code{"adj"}, \code{"quan"}).}
+\code{interactive} (logical; use \pkg{plotly}), and}
 }
 \value{
 This function is called for its side effect of producing plots. It does not return a value.
@@ -31,7 +30,7 @@ result <- mvn(data)
 
 plot(result, diagnostic = "multivariate", type = "qq")
 plot(result, diagnostic = "univariate", type = "boxplot")
-plot(result, diagnostic = "outlier", outlier_method = "adj")
+plot(result, diagnostic = "outlier")
 }
 
 }

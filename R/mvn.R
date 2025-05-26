@@ -27,7 +27,6 @@ utils::globalVariables(c(
 #'   \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.
 #' @param multivariate_outlier_method Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 #'   Default: \code{"none"}.
-#' @param show_outliers Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.
 #' @param show_new_data Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.
 #' @param tidy Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.
 
@@ -36,7 +35,7 @@ utils::globalVariables(c(
 #'   - univariate_normality: Data frame of univariate normality test results.
 #' Additional elements (if requested and available):
 #'   - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
-#'   - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
+#'   - multivariate_outliers: Data frame of flagged multivariate outliers (if multivariate_outlier_method != "none").
 #'   - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
 #'   - box_cox_lambda: Estimated Box-Cox lambda values (if box_cox_transform = TRUE).
 #'   - data: Processed data matrix used in the analysis (transformed and/or cleaned).
@@ -94,7 +93,7 @@ utils::globalVariables(c(
 #' result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
 #'              univariate_test = "AD", 
 #'              multivariate_outlier_method = "adj",
-#'              show_outliers = TRUE, show_new_data = TRUE)
+#'              show_new_data = TRUE)
 #'
 #' ### Multivariate Normality Result
 #' result$multivariate_normality
@@ -115,7 +114,7 @@ utils::globalVariables(c(
 #' # multivariate Q-Q plots for multivariate normality assessment
 #' # and multivariate outlier detection.
 #'
-#' @importFrom energy mvnorm.etest
+#' @importFrom energy mvnorm.etest mvnorm.e
 #' @importFrom boot boot
 #' @importFrom moments kurtosis skewness
 #' @importFrom methods new
@@ -143,7 +142,6 @@ mvn <- function(data,
                 multivariate_outlier_method = "none",
                 box_cox_transform = FALSE,
                 box_cox_transform_type = "optimal",
-                show_outliers = FALSE,
                 show_new_data = FALSE,
                 tidy = TRUE) {
   
@@ -525,7 +523,7 @@ mvn <- function(data,
         
       }
       
-      if (show_outliers) {
+      if (multivariate_outlier_method != "none") {
         mvOutliers <- mvOutliers %>%
           imap_dfr( ~ .x %>%
                       mutate(Group = .y), .id = NULL) %>%
@@ -586,7 +584,7 @@ mvn <- function(data,
         
       }
       
-      if (show_outliers) {
+      if (multivariate_outlier_method != "none") {
         mvOutliers <- mvOutliers %>%
           select(Observation, Mahalanobis.Distance)
         
@@ -605,7 +603,7 @@ mvn <- function(data,
     
   }
   
-  if (show_outliers) {
+  if (multivariate_outlier_method != "none") {
     result = c(result, list(multivariate_outliers = mvOutliers))
     
   }
@@ -622,6 +620,9 @@ mvn <- function(data,
   }
   
   result = c(result, list(data = data, subset = subset))
+  
+  result = c(result, list(outlierMethod = multivariate_outlier_method))
+  
 
   class(result) <- "mvn"
   

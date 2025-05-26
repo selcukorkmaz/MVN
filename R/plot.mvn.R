@@ -10,7 +10,6 @@
 #'   \code{diagnostic} (\code{"multivariate"}, \code{"univariate"}, \code{"outlier"}),
 #'   \code{type} (e.g., \code{"qq"}, \code{"boxplot"}, \code{"persp"}),
 #'   \code{interactive} (logical; use \pkg{plotly}), and
-#'   \code{outlier_method} (\code{"adj"}, \code{"quan"}).
 #'
 #' @return This function is called for its side effect of producing plots. It does not return a value.
 #'
@@ -21,7 +20,7 @@
 #'
 #' plot(result, diagnostic = "multivariate", type = "qq")
 #' plot(result, diagnostic = "univariate", type = "boxplot")
-#' plot(result, diagnostic = "outlier", outlier_method = "adj")
+#' plot(result, diagnostic = "outlier")
 #' }
 #'
 #' @importFrom ggplot2 ggtitle
@@ -36,8 +35,7 @@ plot.mvn <- function(x, ...) {
                           c("multivariate", "univariate", "outlier"))
   type <- if (is.null(args$type)) NULL else args$type
   interactive <- if (is.null(args$interactive)) FALSE else args$interactive
-  outlier_method <- if (is.null(args$outlier_method)) "adj" else args$outlier_method
-  
+  outlier_method <- x$outlierMethod
   df = x$data
   
   # ---- MULTIVARIATE PLOT ----
@@ -138,6 +136,12 @@ plot.mvn <- function(x, ...) {
   
   # ---- OUTLIER PLOT ----
   if (diagnostic == "outlier") {
+    
+    if(outlier_method == "none"){
+      
+      stop("No outlier detection method specified. Please set 'multivariate_outlier_method' to either 'quan' or 'adj' in the mvn() function.")
+      
+    }
     
     if (outlier_method == "quan") {
       title = "Chi-Square Q-Q Plot"

@@ -19,7 +19,6 @@ mvn(
   multivariate_outlier_method = "none",
   box_cox_transform = FALSE,
   box_cox_transform_type = "optimal",
-  show_outliers = FALSE,
   show_new_data = FALSE,
   tidy = TRUE
 )
@@ -58,8 +57,6 @@ Default: \code{"none"}.}
 
 \item{box_cox_transform_type}{Character; either \code{"optimal"} or \code{"rounded"} lambda for Box-Cox. Default: \code{"optimal"}.}
 
-\item{show_outliers}{Logical; if \code{TRUE}, include outlier table in output. Default: \code{FALSE}.}
-
 \item{show_new_data}{Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.}
 
 \item{tidy}{Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.}
@@ -70,7 +67,7 @@ A named list containing:
   - univariate_normality: Data frame of univariate normality test results.
 Additional elements (if requested and available):
   - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
-  - multivariate_outliers: Data frame of flagged multivariate outliers (if show_outliers = TRUE).
+  - multivariate_outliers: Data frame of flagged multivariate outliers (if multivariate_outlier_method != "none").
   - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
   - box_cox_lambda: Estimated Box-Cox lambda values (if box_cox_transform = TRUE).
   - data: Processed data matrix used in the analysis (transformed and/or cleaned).
@@ -101,7 +98,7 @@ If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality t
 result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
              univariate_test = "AD", 
              multivariate_outlier_method = "adj",
-             show_outliers = TRUE, show_new_data = TRUE)
+             show_new_data = TRUE)
 
 ### Multivariate Normality Result
 result$multivariate_normality

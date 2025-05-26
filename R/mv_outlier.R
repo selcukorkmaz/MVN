@@ -101,7 +101,7 @@ mv_outlier <- function(data,
         )
       } else NULL
       
-      annotate_layer <- if (max(df$distance) >= crt) {
+      annotate_layer <- if (max(df$distance) > crt) {
         annotate(
           "text",
           x = crt,
@@ -166,7 +166,7 @@ mv_outlier <- function(data,
         )
       } else NULL
       
-      annotate_layer <- if (max(df2$distance) >= chiSq) {
+      annotate_layer <- if (max(df2$distance) > chiSq) {
         annotate(
           "text",
           x = chiSq,
