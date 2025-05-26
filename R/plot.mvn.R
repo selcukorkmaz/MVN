@@ -44,7 +44,8 @@ plot.mvn <- function(x, ...) {
   if (diagnostic == "multivariate") {
     
     if (is.null(x$subset)) {
-      print(multivariate_diagnostic_plot(x$data, type = type))  # also needs print()
+      p <- multivariate_diagnostic_plot(x$data, type = type)
+      return(p)
     } else {
       splitData <- split(x$data, x$data[[x$subset]])
       splitData <- lapply(splitData, function(df) df[, names(df) != x$subset])
@@ -68,30 +69,20 @@ plot.mvn <- function(x, ...) {
         
       }else{
         
-        if(type == "persp"){
-          
-          title = "3D perspective plot for"
-          
-        }
-        
-        if(type == "contour"){
-          
-          title = "Contour plot for"
-          
-        }
-        
-        invisible(
-          mapply(
+        if (type %in% c("persp", "contour")) {
+          title <- if (type == "persp") "3D perspective plot for" else "Contour plot for"
+          plots <- mapply(
             function(df, group) {
               p <- multivariate_diagnostic_plot(df, type = type)
               p <- plotly::layout(p, title = list(text = paste(title, group)))
-              print(p)
+              return(p)
             },
             splitData,
-            group_names
+            group_names,
+            SIMPLIFY = FALSE
           )
-        )
-        
+          return(plots) 
+        }
         
       }
       
