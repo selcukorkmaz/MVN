@@ -63,15 +63,17 @@ Default: \code{"none"}.}
 }
 \value{
 A named list containing:
-  - multivariate_normality: Data frame of the selected multivariate normality (MVN) test results.
-  - univariate_normality: Data frame of univariate normality test results.
-Additional elements (if requested and available):
-  - descriptives: Data frame of descriptive statistics (if descriptives = TRUE).
-  - multivariate_outliers: Data frame of flagged multivariate outliers (if multivariate_outlier_method != "none").
-  - new_data: Original data with multivariate outliers removed (if show_new_data = TRUE).
-  - box_cox_lambda: Estimated Box-Cox lambda values (if box_cox_transform = TRUE).
-  - data: Processed data matrix used in the analysis (transformed and/or cleaned).
-  - subset: The grouping variable used for subset analysis, if applicable.
+\describe{
+  \item{multivariate_normality}{A data frame of the selected multivariate normality (MVN) test results.}
+  \item{univariate_normality}{A data frame of univariate normality test results.}
+
+  \item{descriptives}{(Optional) A data frame of descriptive statistics if \code{descriptives = TRUE}.}
+  \item{multivariate_outliers}{(Optional) A data frame of flagged multivariate outliers if \code{multivariate_outlier_method != "none"}.}
+  \item{new_data}{(Optional) Original data with multivariate outliers removed if \code{show_new_data = TRUE}.}
+  \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{box_cox_transform = TRUE}.}
+  \item{data}{The processed data matrix used in the analysis (transformed and/or cleaned).}
+  \item{subset}{(Optional) The grouping variable used for subset analysis, if applicable.}
+}
 }
 \description{
 Conduct multivariate normality tests, outlier detection, univariate normality tests,
@@ -101,23 +103,20 @@ result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
              show_new_data = TRUE)
 
 ### Multivariate Normality Result
-result$multivariate_normality
+summary(result, select = "mvn")
 
 ### Univariate Normality Result
-result$univariate_normality
+summary(result, select = "univariate")
 
 ### Descriptives
-result$descriptives
+summary(result, select = "descriptives")
 
 ### Multivariate Outliers
-result$multivariate_outliers
+summary(result, select = "outliers")
 
 ### New data without multivariate outliers
-result$new_data
+summary(result, select = "new_data")
 
-# Note that this function also creates univariate histograms,
-# multivariate Q-Q plots for multivariate normality assessment
-# and multivariate outlier detection.
 
 }
 \references{

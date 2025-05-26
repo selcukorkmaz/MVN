@@ -4,7 +4,7 @@
 #' (Shapiro–Wilk or Shapiro–Francia) across variables and adjusting for the correlation structure.
 #'
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
-#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.
+#' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.
 #'
 #' @return A data frame with one row containing the test name (\code{Test}), the Royston test statistic (\code{Statistic}),
 #' and the associated p-value (\code{p.value}) from a chi-square approximation.
@@ -20,7 +20,7 @@
 #' @importFrom moments kurtosis
 #' @importFrom nortest sf.test
 #' @export
-royston <- function(data, tol = 1e-8) {
+royston <- function(data, tol = 1e-25) {
   # Convert and filter numeric columns
   df <- as.data.frame(data)
   num_cols <- vapply(df, is.numeric, logical(1))

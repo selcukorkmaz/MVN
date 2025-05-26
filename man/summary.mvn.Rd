@@ -6,7 +6,7 @@
 \usage{
 \method{summary}{mvn}(
   object,
-  select = c("mvn", "univariate", "descriptives", "outliers"),
+  select = c("mvn", "univariate", "descriptives", "outliers", "new_data"),
   ...
 )
 }

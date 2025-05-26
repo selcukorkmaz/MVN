@@ -25,7 +25,7 @@
 #' @importFrom utils head
 #' @method summary mvn
 #' @export
-summary.mvn  <- function(object, select = c("mvn", "univariate", "descriptives", "outliers"), ...) {
+summary.mvn  <- function(object, select = c("mvn", "univariate", "descriptives", "outliers", "new_data"), ...) {
   if (!requireNamespace("cli", quietly = TRUE)) {
     stop("Package 'cli' is required for pretty printing. Please install it.")
   }
@@ -50,6 +50,11 @@ summary.mvn  <- function(object, select = c("mvn", "univariate", "descriptives",
   if ("outliers" %in% select && !is.null(object$multivariate_outliers)) {
     cli::cli_h1("Multivariate Outliers")
     print(object$multivariate_outliers)
+  }
+  
+  if ("new_data" %in% select && !is.null(object$new_data)) {
+    cli::cli_h1("New Data (After Removing Outliers)")
+    print(object$new_data)
   }
   
   invisible(object)

@@ -29,8 +29,7 @@ Imports:
     viridis,
     cli,
     energy,
-    plotly,
-    energy
+    plotly
 Collate:
     'mvn.R'
     'mardia.R'

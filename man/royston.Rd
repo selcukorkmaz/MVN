@@ -4,12 +4,12 @@
 \alias{royston}
 \title{Royston's Multivariate Normality Test}
 \usage{
-royston(data, tol = 1e-08)
+royston(data, tol = 1e-25)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
 
-\item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-8}.}
+\item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.}
 }
 \value{
 A data frame with one row containing the test name (\code{Test}), the Royston test statistic (\code{Statistic}),
