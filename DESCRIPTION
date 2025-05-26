@@ -51,6 +51,8 @@ Description:
     Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,
     bivariate density plots, and Box–Cox transformations (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
 Encoding: UTF-8
-License: GPL (>= 2)
+License: MIT + file LICENSE
+URL: https://selcukorkmaz.github.io/mvn-tutorial/, https://github.com/selcukorkmaz/MVN
+BugReports: https://github.com/selcukorkmaz/MVN/issues
 RoxygenNote: 7.3.2
 NeedsCompilation: no
