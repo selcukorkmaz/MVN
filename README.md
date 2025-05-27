@@ -84,10 +84,15 @@ result <- mvn(
 summary(result)
 ```
 
-## Web Application
+## Shiny App
 
-A web-based graphical user interface is available here:
+A web-based shiny app is available here:
 http://biosoft.erciyes.edu.tr/app/MVN
+
+
+## Tutorial
+A step-by-step tutorial is available here:
+https://selcukorkmaz.github.io/mvn-tutorial/
 
 
 ## Citation
