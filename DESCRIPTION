@@ -34,6 +34,7 @@ Collate:
     'mvn.R'
     'mardia.R'
     'hz.R'
+    'hw.R'
     'royston.R'
     'doornik_hansen.R'
     'energy.R'
@@ -48,12 +49,12 @@ Collate:
     'summary.mvn.R'
     'impute_missing.R'
 Description:
-    A suite of multivariate normality tests (Mardia, Henze–Zirkler, Royston,
+    A suite of multivariate normality tests (Mardia, Henze–Zirkler, Henze-Wagner, Royston,
     Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,
     bivariate density plots, and Box–Cox transformations (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
 Encoding: UTF-8
 License: MIT + file LICENSE
-URL: https://selcukorkmaz.github.io/mvn-tutorial/, https://github.com/selcukorkmaz/MVN
+URL: https://selcukorkmaz.github.io/mvn-tutorial/, https://github.com/selcukorkmaz/MVN, http://biosoft.erciyes.edu.tr/app/MVN
 BugReports: https://github.com/selcukorkmaz/MVN/issues
 RoxygenNote: 7.3.2
 NeedsCompilation: no

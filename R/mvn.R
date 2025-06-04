@@ -10,7 +10,7 @@ utils::globalVariables(c(
 #'
 #' @param data A numeric matrix or data frame where each row represents an observation and each column represents a variable. All variables should be numeric; non-numeric columns will be ignored or cause an error depending on implementation.
 #' @param subset Optional character string indicating the name of a grouping variable within the data. When provided, analyses will be performed separately for each level of the grouping variable. This is useful for comparing multivariate normality or outlier structure across groups.
-#' @param mvn_test A character string specifying which multivariate normality test to use. Supported options include "mardia" (Mardia's test), "hz" (Henze-Zirkler's test), "royston" (Royston's test), "doornik_hansen" (Doornik-Hansen test), and "energy" (Energy-based test). The default is "hz", which provides good power for detecting departures from multivariate normality.
+#' @param mvn_test A character string specifying which multivariate normality test to use. Supported options include "mardia" (Mardia's test), "hz" (Henze-Zirkler's test), "hw" (Henze-Wagner's test), "royston" (Royston's test), "doornik_hansen" (Doornik-Hansen test), and "energy" (Energy-based test). The default is "hz", which provides good power for detecting departures from multivariate normality.
 #' @param use_population A logical value indicating whether to use the population version of the covariance matrix estimator. If TRUE, scales the covariance matrix by (n - 1)/n to estimate the population covariance. If FALSE, the sample covariance matrix is used instead. The default is TRUE.
 #' @param tol A small numeric value used as the tolerance parameter for matrix inversion via solve(). This is important when working with nearly singular covariance matrices. The default value is 1e-25, which ensures numerical stability during matrix computations.
 #' @param alpha A numeric value specifying the significance level used for defining outliers when the multivariate outlier detection method is set to "adj" (adjusted robust weights). This threshold controls the false positive rate for identifying multivariate outliers. The default is 0.05.
@@ -46,10 +46,10 @@ utils::globalVariables(c(
 #' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
 #'
 #' If \code{mvn_test = "hz"}, it calculates the Henze-Zirkler's multivariate normality test. The Henze-Zirkler test is based on a non-negative functional distance that measures the distance between two distribution functions. If the data is multivariate normal, the test statistic HZ is approximately lognormally distributed. It proceeds to calculate the mean, variance and smoothness parameter. Then, mean and variance are lognormalized and the p-value is estimated.
-#' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed.
+#'
+#' If \code{mvn_test = "hw"}, it calculates the Henze-Wagner's multivariate normality test. The Henze-Wagner test is based on a class of weighted L2-statistics that quantify the deviation of the empirical characteristic function from that of the multivariate normal distribution. It uses a weight function involving a smoothness parameter to control the influence of differences in the tails. The test statistic is computed and its null distribution is approximated to obtain the p-value.
 #'
 #' If \code{mvn_test = "royston"}, it calculates the Royston's multivariate normality test. A function to generate the Shapiro-Wilk's W statistic needed to feed the Royston's H test for multivariate normality However, if kurtosis of the data greater than 3 then Shapiro-Francia test is used for leptokurtic samples else Shapiro-Wilk test is used for platykurtic samples.
-#' If there are missing values in the data, a listwise deletion will be applied and a complete-case analysis will be performed. Do not apply Royston's test, if dataset includes more than 5000 cases or less than 3 cases, since it depends on Shapiro-Wilk's test.
 #'
 #' If \code{mvn_test = "doornik_hansen"}, it calculates the Doornik-Hansen's multivariate normality test. The code is adapted from asbio package (Aho, 2017).
 #'
@@ -155,6 +155,11 @@ mvn <- function(data,
     stop("The 'subset' variable does not exist in the data.")
   }
   
+  p_tmp <- if (!is.null(subset)) ncol(data) - 1 else ncol(data)
+  n_tmp <- nrow(data)
+  if (p_tmp > n_tmp && mvn_test != "hw") {
+    warning("Number of variables exceeds sample size; consider mvn_test = 'hw'.")
+  }
   
   power_family <- match.arg(power_family, c("none", "bcPower", "bcnPower", "bcnPowerInverse", "yjPower", "basicPower"))
   power_transform_type <- match.arg(power_transform_type, c("optimal", "rounded"))
@@ -165,8 +170,8 @@ mvn <- function(data,
     stop("Use either `transform` or `power_family`, not both.")
   }
   
-  if (!mvn_test %in% c("mardia", "hz", "royston", "doornik_hansen", "energy")) {
-    stop("Invalid mvn_test. Choose from: 'mardia', 'hz', 'royston', 'doornik_hansen', 'energy'.")
+  if (!mvn_test %in% c("mardia", "hz", "hw", "royston", "doornik_hansen", "energy")) {
+    stop("Invalid mvn_test. Choose from: 'mardia', 'hz', 'hw', 'royston', 'doornik_hansen', 'energy'.")
   }
   
   if (!univariate_test %in% c("SW", "CVM", "Lillie", "SF", "AD")) {
@@ -224,6 +229,11 @@ mvn <- function(data,
       
       if (mvn_test == "hz") {
         mvnResult = hz(data, use_population = use_population, tol = tol)
+        
+      }
+      
+      if (mvn_test == "hw") {
+        mvnResult = hw(data, use_population = use_population, tol = tol)
         
       }
       
@@ -372,7 +382,14 @@ mvn <- function(data,
                            hz,
                            use_population = use_population,
                            tol = tol)
-        
+      }
+      
+      
+      if (mvn_test == "hw") {
+        mvnResult = lapply(splitData,
+                           hw,
+                           use_population = use_population,
+                           tol = tol)
       }
       
       if (mvn_test == "royston") {
