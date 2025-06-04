@@ -6,7 +6,7 @@ utils::globalVariables(c(
 #' Comprehensive Multivariate Normality and Diagnostic Function
 #'
 #' Conduct multivariate normality tests, outlier detection, univariate normality tests,
-#' descriptive statistics, and Box-Cox transformation in one wrapper.
+#' descriptive statistics, and Box-Cox or Yeo-Johnson transformation in one wrapper.
 #'
 #' @param data A numeric matrix or data frame (rows = observations, columns = variables).
 #' @param subset Optional character; name of a grouping variable in \code{data} for subset analyses.
@@ -20,8 +20,10 @@ utils::globalVariables(c(
 #' @param descriptives Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.
 #' @param transform Character; one of \code{"none"}, \code{"log"}, \code{"sqrt"}, \code{"square"}.
 #'   Applies marginal transformations before analysis. Default: \code{"none"}.
-#' @param box_cox_transform Logical; if \code{TRUE}, applies Box-Cox transformation to all variables. Default: \code{FALSE}.
-#' @param box_cox_transform_type Character; either \code{"optimal"} or \code{"rounded"} lambda for Box-Cox. Default: \code{"optimal"}.
+#' @param power_transform Character; \code{"none"}, \code{"box_cox"}, or \code{"yeo_johnson"}. Applies a power
+#'   transformation before analysis. Default: \code{"none"}.
+#' @param power_transform_type Character; either \code{"optimal"} or \code{"rounded"} lambda for the chosen
+#'   power transformation. Default: \code{"optimal"}.
 #' @param R Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.
 #' @param univariate_test Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"}, 
 #'   \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.
@@ -38,7 +40,8 @@ utils::globalVariables(c(
 #'   \item{descriptives}{(Optional) A data frame of descriptive statistics if \code{descriptives = TRUE}.}
 #'   \item{multivariate_outliers}{(Optional) A data frame of flagged multivariate outliers if \code{multivariate_outlier_method != "none"}.}
 #'   \item{new_data}{(Optional) Original data with multivariate outliers removed if \code{show_new_data = TRUE}.}
-#'   \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{box_cox_transform = TRUE}.}
+#'   \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{power_transform = "box_cox"}.}
+#'   \item{yeo_johnson_lambda}{(Optional) Estimated Yeo-Johnson lambda values if \code{power_transform = "yeo_johnson"}.}
 #'   \item{data}{The processed data matrix used in the analysis (transformed and/or cleaned).}
 #'   \item{subset}{(Optional) The grouping variable used for subset analysis, if applicable.}
 #' }
@@ -138,8 +141,8 @@ mvn <- function(data,
                 R = 1000,
                 univariate_test = "AD",
                 multivariate_outlier_method = "none",
-                box_cox_transform = FALSE,
-                box_cox_transform_type = "optimal",
+                power_transform = "none",
+                power_transform_type = "optimal",
                 show_new_data = FALSE,
                 tidy = TRUE) {
   
@@ -159,8 +162,11 @@ mvn <- function(data,
   }
   
   
-  if (box_cox_transform && transform != "none") {
-    stop("Use either `transform` or `box_cox_transform`, not both.")
+  power_transform <- match.arg(power_transform, c("none", "box_cox", "yeo_johnson"))
+  power_transform_type <- match.arg(power_transform_type, c("optimal", "rounded"))
+
+  if (power_transform != "none" && transform != "none") {
+    stop("Use either `transform` or `power_transform`, not both.")
   }
   
   if (!mvn_test %in% c("mardia", "hz", "royston", "doornik_hansen", "energy")) {
@@ -171,7 +177,7 @@ mvn <- function(data,
     stop("Invalid univariate_test. Choose from: 'SW', 'CVM', 'Lillie', 'SF', 'AD'.")
   }
   
-  if (box_cox_transform && any(data <= 0)) {
+  if (power_transform == "box_cox" && any(data <= 0)) {
     stop("Box-Cox transformation requires strictly positive data.")
   }
   
@@ -183,11 +189,16 @@ mvn <- function(data,
   
   
   if (is.null(subset)) {
-    if (box_cox_transform) {
-      result = box_cox_transform(data, type = box_cox_transform_type)
+    if (power_transform == "box_cox") {
+      result = box_cox_transform(data, type = power_transform_type)
       data = result$data
       BoxCoxPower = result$lambda
-      
+
+    } else if (power_transform == "yeo_johnson") {
+      result = yeo_johnson_transform(data, type = power_transform_type)
+      data = result$data
+      YeoJohnsonPower = result$lambda
+
     }
     
     if (transform == "log") {
@@ -292,7 +303,7 @@ mvn <- function(data,
 
     
   } else{
-    if (box_cox_transform) {
+    if (power_transform == "box_cox") {
       sData = split(data[, !(colnames(data) %in% subset)], data[, subset])
       comp <- lapply(sData, complete.cases)
       clean_data <- Map(function(d, c) {
@@ -300,24 +311,43 @@ mvn <- function(data,
       }, sData, comp)
       sData <- lapply(sData, function(x)
         x[complete.cases(x), ])
-      
-      result = lapply(sData, box_cox_transform, type = box_cox_transform_type)
+
+      result = lapply(sData, box_cox_transform, type = power_transform_type)
       dataList = list()
       bcList = list()
-      
+
       for (i in 1:length(result)) {
         dataList[[i]] = result[[i]][[1]]
         bcList[[i]] = result[[i]][[2]]
       }
-      
+
       data = cbind.data.frame(do.call(rbind.data.frame, dataList), data[subset][complete.cases(data), ])
-      
+
       colnames(data) = colnms
-      
-      
+
       BoxCoxPower = bcList
       names(BoxCoxPower) = names(sData)
-      
+
+    } else if (power_transform == "yeo_johnson") {
+      sData = split(data[, !(colnames(data) %in% subset)], data[, subset])
+      sData <- lapply(sData, function(x) x[complete.cases(x), ])
+
+      result = lapply(sData, yeo_johnson_transform, type = power_transform_type)
+      dataList = list()
+      yjList = list()
+
+      for (i in 1:length(result)) {
+        dataList[[i]] = result[[i]][[1]]
+        yjList[[i]] = result[[i]][[2]]
+      }
+
+      data = cbind.data.frame(do.call(rbind.data.frame, dataList), data[subset][complete.cases(data), ])
+
+      colnames(data) = colnms
+
+      YeoJohnsonPower = yjList
+      names(YeoJohnsonPower) = names(sData)
+
     }
     
     if (transform == "log") {
@@ -612,9 +642,12 @@ mvn <- function(data,
     
   }
   
-  if (box_cox_transform) {
+  if (power_transform == "box_cox") {
     result = c(result, list(box_cox_lambda = BoxCoxPower))
-    
+
+  } else if (power_transform == "yeo_johnson") {
+    result = c(result, list(yeo_johnson_lambda = YeoJohnsonPower))
+
   }
   
   result = c(result, list(data = data, subset = subset))

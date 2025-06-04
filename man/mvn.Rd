@@ -17,8 +17,8 @@ mvn(
   R = 1000,
   univariate_test = "AD",
   multivariate_outlier_method = "none",
-  box_cox_transform = FALSE,
-  box_cox_transform_type = "optimal",
+  power_transform = "none",
+  power_transform_type = "optimal",
   show_new_data = FALSE,
   tidy = TRUE
 )
@@ -53,9 +53,9 @@ Applies marginal transformations before analysis. Default: \code{"none"}.}
 \item{multivariate_outlier_method}{Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
 Default: \code{"none"}.}
 
-\item{box_cox_transform}{Logical; if \code{TRUE}, applies Box-Cox transformation to all variables. Default: \code{FALSE}.}
+\item{power_transform}{Character; \code{"none"}, \code{"box\_cox"}, or \code{"yeo\_johnson"}. Applies a power transformation before analysis. Default: \code{"none"}.}
 
-\item{box_cox_transform_type}{Character; either \code{"optimal"} or \code{"rounded"} lambda for Box-Cox. Default: \code{"optimal"}.}
+\item{power_transform_type}{Character; either \code{"optimal"} or \code{"rounded"} lambda for the chosen transformation. Default: \code{"optimal"}.}
 
 \item{show_new_data}{Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.}
 
@@ -70,14 +70,15 @@ A named list containing:
   \item{descriptives}{(Optional) A data frame of descriptive statistics if \code{descriptives = TRUE}.}
   \item{multivariate_outliers}{(Optional) A data frame of flagged multivariate outliers if \code{multivariate_outlier_method != "none"}.}
   \item{new_data}{(Optional) Original data with multivariate outliers removed if \code{show_new_data = TRUE}.}
-  \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{box_cox_transform = TRUE}.}
+  \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{power_transform = "box_cox"}.}
+  \item{yeo_johnson_lambda}{(Optional) Estimated Yeo-Johnson lambda values if \code{power_transform = "yeo_johnson"}.}
   \item{data}{The processed data matrix used in the analysis (transformed and/or cleaned).}
   \item{subset}{(Optional) The grouping variable used for subset analysis, if applicable.}
 }
 }
 \description{
 Conduct multivariate normality tests, outlier detection, univariate normality tests,
-descriptive statistics, and Box-Cox transformation in one wrapper.
+descriptive statistics, and Box-Cox or Yeo-Johnson transformation in one wrapper.
 }
 \details{
 If \code{mvn_test = "mardia"}, it calculates the Mardia's multivariate skewness and kurtosis coefficients as well as their corresponding statistical significance.
@@ -98,8 +99,10 @@ If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality t
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
-             univariate_test = "AD", 
+             univariate_test = "AD",
              multivariate_outlier_method = "adj",
+             power_transform = "yeo_johnson",
+             power_transform_type = "rounded",
              show_new_data = TRUE)
 
 ### Multivariate Normality Result
