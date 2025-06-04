@@ -255,7 +255,14 @@ mvn <- function(data,
       }
       
       if (mvn_test == "hw") {
-        mvnResult = hw(data, use_population = use_population, tol = tol)
+        mvnResult = hw(
+          data,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
@@ -272,7 +279,10 @@ mvn <- function(data,
       
       
       if (mvn_test == "doornik_hansen") {
-        mvnResult = doornik_hansen(data)
+        mvnResult = doornik_hansen(data,
+                                   bootstrap = bootstrap,
+                                   B = B,
+                                   cores = cores)
         
       }
       
@@ -424,10 +434,15 @@ mvn <- function(data,
       
       
       if (mvn_test == "hw") {
-        mvnResult = lapply(splitData,
-                           hw,
-                           use_population = use_population,
-                           tol = tol)
+        mvnResult = lapply(
+          splitData,
+          hw,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
       }
       
       if (mvn_test == "royston") {
@@ -443,7 +458,13 @@ mvn <- function(data,
       }
       
       if (mvn_test == "doornik_hansen") {
-        mvnResult = lapply(splitData, doornik_hansen)
+        mvnResult = lapply(
+          splitData,
+          doornik_hansen,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       

@@ -4,10 +4,19 @@
 \alias{doornik_hansen}
 \title{Doornik-Hansen Test for Multivariate Normality}
 \usage{
-doornik_hansen(data)
+doornik_hansen(data, bootstrap = FALSE, B = 1000, cores = 1)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
+
+\item{bootstrap}{Logical; if \code{TRUE}, compute p-value via bootstrap
+resampling. Default is \code{FALSE}.}
+
+\item{B}{Integer; number of bootstrap replicates used when
+\code{bootstrap = TRUE}. Default is \code{1000}.}
+
+\item{cores}{Integer; number of cores for parallel computation when
+\code{bootstrap = TRUE}. Default is 1.}
 }
 \value{
 A data frame with one row containing the following columns:
@@ -22,7 +31,7 @@ and combining skewness and kurtosis measures to test for multivariate normality.
 }
 \examples{
 \dontrun{
-data <- iris[1:50, 1:4]
+data <- iris[1:50, 1:2]
 dh_result <- doornik_hansen(data)
 dh_result
 }

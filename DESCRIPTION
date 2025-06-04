@@ -12,7 +12,6 @@ Authors@R:
              email = "gokmenzararsiz@hotmail.com")
     )
 Maintainer: Selcuk Korkmaz <selcukorkmaz@gmail.com>
-Depends: R (>= 3.5.0)
 Imports:
     methods,
     nortest,
@@ -29,7 +28,8 @@ Imports:
     viridis,
     cli,
     energy,
-    plotly
+    plotly,
+    mice
 Collate:
     'mvn.R'
     'mardia.R'

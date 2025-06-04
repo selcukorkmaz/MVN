@@ -74,6 +74,7 @@ energy <- function(data, B = 1000, seed = 123) {
     Test      = "E-Statistic",
     Statistic = stat_obs,
     p.value   = p_val,
+    Method = "bootstrap",
     stringsAsFactors = FALSE
   )
   return(result)

@@ -15,7 +15,6 @@ mvn(
   descriptives = TRUE,
   transform = "none",
   impute = "none",
-  R = 1000,
   bootstrap = FALSE,
   B = 1000,
   cores = 1,
@@ -48,14 +47,12 @@ mvn(
 
 \item{impute}{A character string specifying method for handling missing data. One of \code{"none"}, \code{"mean"}, \code{"median"}, or \code{"mice"}. Default: \code{"none"}.}
 
-\item{R}{An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.}
-
 \item{bootstrap}{Logical; if \code{TRUE}, p-values for Mardia, Henze-Zirkler
 and Royston tests are obtained via bootstrap resampling. Default is
 \code{FALSE}.}
 
 \item{B}{Integer; number of bootstrap replicates used when
-\code{bootstrap = TRUE}. Default is \code{1000}.}
+\code{bootstrap = TRUE} or \code{mvn_test = "energy"}. Default is \code{1000}.}
 
 \item{cores}{Integer; number of cores to use for bootstrap computation.
 Default is 1.}

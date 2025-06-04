@@ -4,12 +4,12 @@
 \alias{energy}
 \title{E-Statistic Test for Multivariate Normality (Energy Test)}
 \usage{
-energy(data, R = 1000, seed = 123)
+energy(data, B = 1000, seed = 123)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
 
-\item{R}{Integer; number of bootstrap replicates to estimate the null distribution. Default is 1000.}
+\item{B}{Integer; number of bootstrap replicates to estimate the null distribution. Default is 1000.}
 
 \item{seed}{Optional integer to set the random seed for reproducibility.}
 }
@@ -26,7 +26,7 @@ to estimate the null distribution of the test statistic.
 \examples{
 \dontrun{
 data <- iris[1:50, 1:4]
-energy_result <- energy(data, R = 500)
+energy_result <- energy(data, B = 500)
 energy_result
 }
 
