@@ -17,6 +17,7 @@ utils::globalVariables(c(
 #' @param scale A logical value. If TRUE, the input data will be standardized (zero mean and unit variance) before analysis. This is typically recommended when variables are on different scales. Default is FALSE.
 #' @param descriptives A logical value indicating whether to compute descriptive statistics (mean, standard deviation, skewness, and kurtosis) for each variable before conducting multivariate normality or outlier analyses. Default is TRUE.
 #' @param transform A character string specifying a marginal transformation to apply to each variable before analysis. Options are "none" (no transformation), "log" (natural logarithm), "sqrt" (square root), and "square" (square of the values). The default is "none".
+#' @param impute A character string specifying method for handling missing data. One of \code{"none"}, \code{"mean"}, \code{"median"}, or \code{"mice"}. Default: \code{"none"}.
 #' @param power_family A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".
 #' @param power_transform_type A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".
 #' @param R An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.
@@ -130,6 +131,7 @@ mvn <- function(data,
                 scale = FALSE,
                 descriptives = TRUE,
                 transform = "none",
+                impute = "none",
                 R = 1000,
                 univariate_test = "AD",
                 multivariate_outlier_method = "none",
@@ -156,6 +158,8 @@ mvn <- function(data,
   
   power_family <- match.arg(power_family, c("none", "bcPower", "bcnPower", "bcnPowerInverse", "yjPower", "basicPower"))
   power_transform_type <- match.arg(power_transform_type, c("optimal", "rounded"))
+  impute <- match.arg(impute, c("none", "mean", "median", "mice"))
+  
 
   if (power_family != "none" && transform != "none") {
     stop("Use either `transform` or `power_family`, not both.")
@@ -175,10 +179,15 @@ mvn <- function(data,
   
   
   if (anyNA(data)) {
-    warning("Missing values detected. Rows with missing data will be removed.")
-    data <- data[complete.cases(data), ]
+    if (impute == "none") {
+      removed_rows <- sum(!complete.cases(data))
+      warning(sprintf("Missing values detected in %d rows. These rows will be removed.", removed_rows))
+      data <- data[complete.cases(data), ]
+    } else {
+      message(sprintf("Missing values detected. Applying '%s' imputation method.", impute))
+      data <- impute_missing(data, method = impute)
+    }
   }
-  
   
   if (is.null(subset)) {
     if (power_family != "none") {

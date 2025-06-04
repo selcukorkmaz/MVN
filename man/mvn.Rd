@@ -14,6 +14,7 @@ mvn(
   scale = FALSE,
   descriptives = TRUE,
   transform = "none",
+  impute = "none",
   R = 1000,
   univariate_test = "AD",
   multivariate_outlier_method = "none",
@@ -41,6 +42,8 @@ mvn(
 \item{descriptives}{A logical value indicating whether to compute descriptive statistics (mean, standard deviation, skewness, and kurtosis) for each variable before conducting multivariate normality or outlier analyses. Default is TRUE.}
 
 \item{transform}{A character string specifying a marginal transformation to apply to each variable before analysis. Options are "none" (no transformation), "log" (natural logarithm), "sqrt" (square root), and "square" (square of the values). The default is "none".}
+
+\item{impute}{A character string specifying method for handling missing data. One of \code{"none"}, \code{"mean"}, \code{"median"}, or \code{"mice"}. Default: \code{"none"}.}
 
 \item{R}{An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.}
 
