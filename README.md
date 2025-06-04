@@ -48,6 +48,7 @@ Multivariate normality assessment is critical, and no single method is universal
   - Square Root
   - Square
   - Box-Cox (with lambda selection)
+  - Yeo-Johnson (with lambda selection)
 
 - **Descriptive Statistics Output**
 
@@ -77,7 +78,8 @@ library(MVN)
 # Run MVN tests and diagnostics on iris data
 result <- mvn(
   data = iris[1:50, 1:3],
-  mvn_test = "hz"
+  mvn_test = "hz",
+  power_transform = "yeo_johnson"
 )
 
 # View results
