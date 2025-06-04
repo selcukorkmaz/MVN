@@ -17,49 +17,44 @@ mvn(
   R = 1000,
   univariate_test = "AD",
   multivariate_outlier_method = "none",
-  power_transform = "none",
+  power_family = "none",
   power_transform_type = "optimal",
   show_new_data = FALSE,
   tidy = TRUE
 )
 }
 \arguments{
-\item{data}{A numeric matrix or data frame (rows = observations, columns = variables).}
+\item{data}{A numeric matrix or data frame where each row represents an observation and each column represents a variable. All variables should be numeric; non-numeric columns will be ignored or cause an error depending on implementation.}
 
-\item{subset}{Optional character; name of a grouping variable in \code{data} for subset analyses.}
+\item{subset}{Optional character string indicating the name of a grouping variable within the data. When provided, analyses will be performed separately for each level of the grouping variable. This is useful for comparing multivariate normality or outlier structure across groups.}
 
-\item{mvn_test}{Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"}, 
-\code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.}
+\item{mvn_test}{A character string specifying which multivariate normality test to use. Supported options include "mardia" (Mardia's test), "hz" (Henze-Zirkler's test), "royston" (Royston's test), "doornik_hansen" (Doornik-Hansen test), and "energy" (Energy-based test). The default is "hz", which provides good power for detecting departures from multivariate normality.}
 
-\item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.}
+\item{use_population}{A logical value indicating whether to use the population version of the covariance matrix estimator. If TRUE, scales the covariance matrix by (n - 1)/n to estimate the population covariance. If FALSE, the sample covariance matrix is used instead. The default is TRUE.}
 
-\item{tol}{Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.}
+\item{tol}{A small numeric value used as the tolerance parameter for matrix inversion via solve(). This is important when working with nearly singular covariance matrices. The default value is 1e-25, which ensures numerical stability during matrix computations.}
 
-\item{alpha}{Numeric; significance level for ARW outlier cutoff when 
-\code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.}
+\item{alpha}{A numeric value specifying the significance level used for defining outliers when the multivariate outlier detection method is set to "adj" (adjusted robust weights). This threshold controls the false positive rate for identifying multivariate outliers. The default is 0.05.}
 
-\item{scale}{Logical; if \code{TRUE}, standardizes the data before analysis. Default: \code{FALSE}.}
+\item{scale}{A logical value. If TRUE, the input data will be standardized (zero mean and unit variance) before analysis. This is typically recommended when variables are on different scales. Default is FALSE.}
 
-\item{descriptives}{Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.}
+\item{descriptives}{A logical value indicating whether to compute descriptive statistics (mean, standard deviation, skewness, and kurtosis) for each variable before conducting multivariate normality or outlier analyses. Default is TRUE.}
 
-\item{transform}{Character; one of \code{"none"}, \code{"log"}, \code{"sqrt"}, \code{"square"}.
-Applies marginal transformations before analysis. Default: \code{"none"}.}
+\item{transform}{A character string specifying a marginal transformation to apply to each variable before analysis. Options are "none" (no transformation), "log" (natural logarithm), "sqrt" (square root), and "square" (square of the values). The default is "none".}
 
-\item{R}{Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.}
+\item{R}{An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.}
 
-\item{univariate_test}{Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"}, 
-\code{"SF"}, \code{"AD"}. Default: \code{"AD"}.}
+\item{univariate_test}{A character string indicating which univariate normality test to apply to individual variables when such summaries are requested. Options include "SW" (Shapiro-Wilk), "CVM" (Cramér–von Mises), "Lillie" (Lilliefors/Kolmogorov-Smirnov), "SF" (Shapiro–Francia), and "AD" (Anderson–Darling). Default is "AD".}
 
-\item{multivariate_outlier_method}{Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
-Default: \code{"none"}.}
+\item{multivariate_outlier_method}{A character string that specifies the method used for detecting multivariate outliers. Options are "none" (no outlier detection), "quan" (robust Mahalanobis distance based on quantile cutoff), and "adj" (adjusted robust weights with a significance threshold). Default is "none".}
 
-\item{power_transform}{Character; \code{"none"}, \code{"box\_cox"}, or \code{"yeo\_johnson"}. Applies a power transformation before analysis. Default: \code{"none"}.}
+\item{power_family}{A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".}
 
-\item{power_transform_type}{Character; either \code{"optimal"} or \code{"rounded"} lambda for the chosen transformation. Default: \code{"optimal"}.}
+\item{power_transform_type}{A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".}
 
-\item{show_new_data}{Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.}
+\item{show_new_data}{A logical value. If TRUE, the cleaned data with identified outliers removed will be included in the output. This is useful for downstream analysis after excluding extreme observations. Default is FALSE.}
 
-\item{tidy}{Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.}
+\item{tidy}{A logical value. If TRUE, the output will be returned as a tidy data frame, making it easier to use with packages from the tidyverse. A "Group" column will be included when subset analysis is performed. Default is TRUE.}
 }
 \value{
 A named list containing:
@@ -70,8 +65,7 @@ A named list containing:
   \item{descriptives}{(Optional) A data frame of descriptive statistics if \code{descriptives = TRUE}.}
   \item{multivariate_outliers}{(Optional) A data frame of flagged multivariate outliers if \code{multivariate_outlier_method != "none"}.}
   \item{new_data}{(Optional) Original data with multivariate outliers removed if \code{show_new_data = TRUE}.}
-  \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{power_transform = "box_cox"}.}
-  \item{yeo_johnson_lambda}{(Optional) Estimated Yeo-Johnson lambda values if \code{power_transform = "yeo_johnson"}.}
+  \item{powerTransformLambda}{(Optional) Estimated power transform lambda values if \code{power_family = "bcPower"}.}
   \item{data}{The processed data matrix used in the analysis (transformed and/or cleaned).}
   \item{subset}{(Optional) The grouping variable used for subset analysis, if applicable.}
 }
@@ -99,10 +93,8 @@ If \code{mvn_test = "energy"}, it calculates the Energy multivariate normality t
 }
 \examples{
 result = mvn(data = iris[-4], subset = "Species", mvn_test = "hz",
-             univariate_test = "AD",
+             univariate_test = "AD", 
              multivariate_outlier_method = "adj",
-             power_transform = "yeo_johnson",
-             power_transform_type = "rounded",
              show_new_data = TRUE)
 
 ### Multivariate Normality Result

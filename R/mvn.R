@@ -8,29 +8,22 @@ utils::globalVariables(c(
 #' Conduct multivariate normality tests, outlier detection, univariate normality tests,
 #' descriptive statistics, and Box-Cox or Yeo-Johnson transformation in one wrapper.
 #'
-#' @param data A numeric matrix or data frame (rows = observations, columns = variables).
-#' @param subset Optional character; name of a grouping variable in \code{data} for subset analyses.
-#' @param mvn_test Character; one of \code{"mardia"}, \code{"hz"}, \code{"royston"}, 
-#'   \code{"doornik_hansen"}, or \code{"energy"}. Default: \code{"hz"}.
-#' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
-#' @param tol Numeric; tolerance for matrix inversion via \code{solve()}. Default: \code{1e-25}.
-#' @param alpha Numeric; significance level for ARW outlier cutoff when 
-#'   \code{multivariate_outlier_method = "adj"}. Default: \code{0.05}.
-#' @param scale Logical; if \code{TRUE}, standardizes the data before analysis. Default: \code{FALSE}.
-#' @param descriptives Logical; if \code{TRUE}, compute descriptive statistics. Default: \code{TRUE}.
-#' @param transform Character; one of \code{"none"}, \code{"log"}, \code{"sqrt"}, \code{"square"}.
-#'   Applies marginal transformations before analysis. Default: \code{"none"}.
-#' @param power_transform Character; \code{"none"}, \code{"box_cox"}, or \code{"yeo_johnson"}. Applies a power
-#'   transformation before analysis. Default: \code{"none"}.
-#' @param power_transform_type Character; either \code{"optimal"} or \code{"rounded"} lambda for the chosen
-#'   power transformation. Default: \code{"optimal"}.
-#' @param R Integer; number of bootstrap replicates for \code{"energy"} test. Default: \code{1000}.
-#' @param univariate_test Character; one of \code{"SW"}, \code{"CVM"}, \code{"Lillie"}, 
-#'   \code{"SF"}, \code{"AD"}. Default: \code{"AD"}.
-#' @param multivariate_outlier_method Character; \code{"none"}, \code{"quan"}, or \code{"adj"}.
-#'   Default: \code{"none"}.
-#' @param show_new_data Logical; if \code{TRUE}, include cleaned data (non-outliers). Default: \code{FALSE}.
-#' @param tidy Logical; if \code{TRUE}, returns the results as a tidy data frame with an added \code{Group} column. Default is \code{TRUE}.
+#' @param data A numeric matrix or data frame where each row represents an observation and each column represents a variable. All variables should be numeric; non-numeric columns will be ignored or cause an error depending on implementation.
+#' @param subset Optional character string indicating the name of a grouping variable within the data. When provided, analyses will be performed separately for each level of the grouping variable. This is useful for comparing multivariate normality or outlier structure across groups.
+#' @param mvn_test A character string specifying which multivariate normality test to use. Supported options include "mardia" (Mardia's test), "hz" (Henze-Zirkler's test), "royston" (Royston's test), "doornik_hansen" (Doornik-Hansen test), and "energy" (Energy-based test). The default is "hz", which provides good power for detecting departures from multivariate normality.
+#' @param use_population A logical value indicating whether to use the population version of the covariance matrix estimator. If TRUE, scales the covariance matrix by (n - 1)/n to estimate the population covariance. If FALSE, the sample covariance matrix is used instead. The default is TRUE.
+#' @param tol A small numeric value used as the tolerance parameter for matrix inversion via solve(). This is important when working with nearly singular covariance matrices. The default value is 1e-25, which ensures numerical stability during matrix computations.
+#' @param alpha A numeric value specifying the significance level used for defining outliers when the multivariate outlier detection method is set to "adj" (adjusted robust weights). This threshold controls the false positive rate for identifying multivariate outliers. The default is 0.05.
+#' @param scale A logical value. If TRUE, the input data will be standardized (zero mean and unit variance) before analysis. This is typically recommended when variables are on different scales. Default is FALSE.
+#' @param descriptives A logical value indicating whether to compute descriptive statistics (mean, standard deviation, skewness, and kurtosis) for each variable before conducting multivariate normality or outlier analyses. Default is TRUE.
+#' @param transform A character string specifying a marginal transformation to apply to each variable before analysis. Options are "none" (no transformation), "log" (natural logarithm), "sqrt" (square root), and "square" (square of the values). The default is "none".
+#' @param power_family A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".
+#' @param power_transform_type A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".
+#' @param R An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.
+#' @param univariate_test A character string indicating which univariate normality test to apply to individual variables when such summaries are requested. Options include "SW" (Shapiro-Wilk), "CVM" (Cramér–von Mises), "Lillie" (Lilliefors/Kolmogorov-Smirnov), "SF" (Shapiro–Francia), and "AD" (Anderson–Darling). Default is "AD".
+#' @param multivariate_outlier_method A character string that specifies the method used for detecting multivariate outliers. Options are "none" (no outlier detection), "quan" (robust Mahalanobis distance based on quantile cutoff), and "adj" (adjusted robust weights with a significance threshold). Default is "none".
+#' @param show_new_data A logical value. If TRUE, the cleaned data with identified outliers removed will be included in the output. This is useful for downstream analysis after excluding extreme observations. Default is FALSE.
+#' @param tidy A logical value. If TRUE, the output will be returned as a tidy data frame, making it easier to use with packages from the tidyverse. A "Group" column will be included when subset analysis is performed. Default is TRUE.
 
 #' @return A named list containing:
 #' \describe{
@@ -40,8 +33,7 @@ utils::globalVariables(c(
 #'   \item{descriptives}{(Optional) A data frame of descriptive statistics if \code{descriptives = TRUE}.}
 #'   \item{multivariate_outliers}{(Optional) A data frame of flagged multivariate outliers if \code{multivariate_outlier_method != "none"}.}
 #'   \item{new_data}{(Optional) Original data with multivariate outliers removed if \code{show_new_data = TRUE}.}
-#'   \item{box_cox_lambda}{(Optional) Estimated Box-Cox lambda values if \code{power_transform = "box_cox"}.}
-#'   \item{yeo_johnson_lambda}{(Optional) Estimated Yeo-Johnson lambda values if \code{power_transform = "yeo_johnson"}.}
+#'   \item{powerTransformLambda}{(Optional) Estimated power transform lambda values if \code{power_family = "bcPower"}.}
 #'   \item{data}{The processed data matrix used in the analysis (transformed and/or cleaned).}
 #'   \item{subset}{(Optional) The grouping variable used for subset analysis, if applicable.}
 #' }
@@ -141,7 +133,7 @@ mvn <- function(data,
                 R = 1000,
                 univariate_test = "AD",
                 multivariate_outlier_method = "none",
-                power_transform = "none",
+                power_family = "none",
                 power_transform_type = "optimal",
                 show_new_data = FALSE,
                 tidy = TRUE) {
@@ -162,11 +154,11 @@ mvn <- function(data,
   }
   
   
-  power_transform <- match.arg(power_transform, c("none", "box_cox", "yeo_johnson"))
+  power_family <- match.arg(power_family, c("none", "bcPower", "bcnPower", "bcnPowerInverse", "yjPower", "basicPower"))
   power_transform_type <- match.arg(power_transform_type, c("optimal", "rounded"))
 
-  if (power_transform != "none" && transform != "none") {
-    stop("Use either `transform` or `power_transform`, not both.")
+  if (power_family != "none" && transform != "none") {
+    stop("Use either `transform` or `power_family`, not both.")
   }
   
   if (!mvn_test %in% c("mardia", "hz", "royston", "doornik_hansen", "energy")) {
@@ -177,7 +169,7 @@ mvn <- function(data,
     stop("Invalid univariate_test. Choose from: 'SW', 'CVM', 'Lillie', 'SF', 'AD'.")
   }
   
-  if (power_transform == "box_cox" && any(data <= 0)) {
+  if (power_family == "bcPower" && any(data[sapply(data, is.numeric)] <= 0)) {
     stop("Box-Cox transformation requires strictly positive data.")
   }
   
@@ -189,17 +181,12 @@ mvn <- function(data,
   
   
   if (is.null(subset)) {
-    if (power_transform == "box_cox") {
-      result = box_cox_transform(data, type = power_transform_type)
+    if (power_family != "none") {
+      result = power_transform(data, family = power_family, type = power_transform_type)
       data = result$data
-      BoxCoxPower = result$lambda
+      powerTransformLambda = result$lambda
 
-    } else if (power_transform == "yeo_johnson") {
-      result = yeo_johnson_transform(data, type = power_transform_type)
-      data = result$data
-      YeoJohnsonPower = result$lambda
-
-    }
+    } 
     
     if (transform == "log") {
       data = apply(data, 2, log)
@@ -303,7 +290,7 @@ mvn <- function(data,
 
     
   } else{
-    if (power_transform == "box_cox") {
+    if (power_family != "none") {
       sData = split(data[, !(colnames(data) %in% subset)], data[, subset])
       comp <- lapply(sData, complete.cases)
       clean_data <- Map(function(d, c) {
@@ -312,43 +299,23 @@ mvn <- function(data,
       sData <- lapply(sData, function(x)
         x[complete.cases(x), ])
 
-      result = lapply(sData, box_cox_transform, type = power_transform_type)
+      result = lapply(sData, power_transform, family = power_family, type = power_transform_type)
       dataList = list()
-      bcList = list()
+      powerTransformList = list()
 
       for (i in 1:length(result)) {
         dataList[[i]] = result[[i]][[1]]
-        bcList[[i]] = result[[i]][[2]]
+        powerTransformList[[i]] = result[[i]][[2]]
       }
 
       data = cbind.data.frame(do.call(rbind.data.frame, dataList), data[subset][complete.cases(data), ])
 
       colnames(data) = colnms
 
-      BoxCoxPower = bcList
-      names(BoxCoxPower) = names(sData)
+      powerTransformLambda = powerTransformList
+      names(powerTransformLambda) = names(sData)
 
-    } else if (power_transform == "yeo_johnson") {
-      sData = split(data[, !(colnames(data) %in% subset)], data[, subset])
-      sData <- lapply(sData, function(x) x[complete.cases(x), ])
-
-      result = lapply(sData, yeo_johnson_transform, type = power_transform_type)
-      dataList = list()
-      yjList = list()
-
-      for (i in 1:length(result)) {
-        dataList[[i]] = result[[i]][[1]]
-        yjList[[i]] = result[[i]][[2]]
-      }
-
-      data = cbind.data.frame(do.call(rbind.data.frame, dataList), data[subset][complete.cases(data), ])
-
-      colnames(data) = colnms
-
-      YeoJohnsonPower = yjList
-      names(YeoJohnsonPower) = names(sData)
-
-    }
+    } 
     
     if (transform == "log") {
       tData = apply(data[!(colnames(data) %in% subset)], 2, log)
@@ -642,13 +609,10 @@ mvn <- function(data,
     
   }
   
-  if (power_transform == "box_cox") {
-    result = c(result, list(box_cox_lambda = BoxCoxPower))
+  if (power_family != "none") {
+    result = c(result, list(box_cox_lambda = powerTransformLambda))
 
-  } else if (power_transform == "yeo_johnson") {
-    result = c(result, list(yeo_johnson_lambda = YeoJohnsonPower))
-
-  }
+  } 
   
   result = c(result, list(data = data, subset = subset))
   
