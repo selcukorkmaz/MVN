@@ -122,7 +122,7 @@ summary(result, select = "new_data")
 \references{
 Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014 6(2):151-162. URL \url{https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf}
 
-Mardia, K. V. (1970), Measures of multivariate skewnees and kurtosis with applications. Biometrika, 57(3):519-530.
+Mardia, K. V. (1970), Measures of multivariate skewness and kurtosis with applications. Biometrika, 57(3):519-530.
 
 Mardia, K. V. (1974), Applications of some measures of multivariate skewness and kurtosis for testing normality and robustness studies. Sankhy A, 36:115-128.
 
