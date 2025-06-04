@@ -20,7 +20,13 @@ utils::globalVariables(c(
 #' @param impute A character string specifying method for handling missing data. One of \code{"none"}, \code{"mean"}, \code{"median"}, or \code{"mice"}. Default: \code{"none"}.
 #' @param power_family A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".
 #' @param power_transform_type A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".
-#' @param R An integer specifying the number of bootstrap replicates to be used for the energy-based multivariate normality test. Only relevant when mvn_test is set to "energy". The default is 1000.
+#' @param bootstrap Logical; if \code{TRUE}, p-values for Mardia, Henze-Zirkler
+#'   and Royston tests are obtained via bootstrap resampling. Default is
+#'   \code{FALSE}.
+#' @param B Integer; number of bootstrap replicates used when
+#'   \code{bootstrap = TRUE} or \code{mvn_test = "energy"}. Default is \code{1000}.
+#' @param cores Integer; number of cores to use for bootstrap computation.
+#'   Default is 1.
 #' @param univariate_test A character string indicating which univariate normality test to apply to individual variables when such summaries are requested. Options include "SW" (Shapiro-Wilk), "CVM" (Cramér–von Mises), "Lillie" (Lilliefors/Kolmogorov-Smirnov), "SF" (Shapiro–Francia), and "AD" (Anderson–Darling). Default is "AD".
 #' @param multivariate_outlier_method A character string that specifies the method used for detecting multivariate outliers. Options are "none" (no outlier detection), "quan" (robust Mahalanobis distance based on quantile cutoff), and "adj" (adjusted robust weights with a significance threshold). Default is "none".
 #' @param show_new_data A logical value. If TRUE, the cleaned data with identified outliers removed will be included in the output. This is useful for downstream analysis after excluding extreme observations. Default is FALSE.
@@ -132,7 +138,9 @@ mvn <- function(data,
                 descriptives = TRUE,
                 transform = "none",
                 impute = "none",
-                R = 1000,
+                bootstrap = FALSE,
+                B = 1000,
+                cores = 1,
                 univariate_test = "AD",
                 multivariate_outlier_method = "none",
                 power_family = "none",
@@ -223,12 +231,26 @@ mvn <- function(data,
     
     if (!(dim(data)[2] < 2 || is.null(dim(data)))) {
       if (mvn_test == "mardia") {
-        mvnResult = mardia(data, use_population = use_population, tol = tol)
+        mvnResult = mardia(
+          data,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
       if (mvn_test == "hz") {
-        mvnResult = hz(data, use_population = use_population, tol = tol)
+        mvnResult = hz(
+          data,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
@@ -238,7 +260,13 @@ mvn <- function(data,
       }
       
       if (mvn_test == "royston") {
-        mvnResult = royston(data, tol = tol)
+        mvnResult = royston(
+          data,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
@@ -249,7 +277,7 @@ mvn <- function(data,
       }
       
       if (mvn_test == "energy") {
-        mvnResult = energy(data, R = R)
+        mvnResult = energy(data, B = B)
         
       }
       
@@ -370,18 +398,28 @@ mvn <- function(data,
     
     if (!(is.null(lapply(splitData, dim)[[1]]))) {
       if (mvn_test == "mardia") {
-        mvnResult = lapply(splitData,
-                           mardia,
-                           use_population = use_population,
-                           tol = tol)
+        mvnResult = lapply(
+          splitData,
+          mardia,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
       if (mvn_test == "hz") {
-        mvnResult = lapply(splitData,
-                           hz,
-                           use_population = use_population,
-                           tol = tol)
+        mvnResult = lapply(
+          splitData,
+          hz,
+          use_population = use_population,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
       }
       
       
@@ -393,7 +431,14 @@ mvn <- function(data,
       }
       
       if (mvn_test == "royston") {
-        mvnResult = lapply(splitData, royston, tol = tol)
+        mvnResult = lapply(
+          splitData,
+          royston,
+          tol = tol,
+          bootstrap = bootstrap,
+          B = B,
+          cores = cores
+        )
         
       }
       
@@ -403,7 +448,7 @@ mvn <- function(data,
       }
       
       if (mvn_test == "energy") {
-        mvnResult = lapply(splitData, energy, R = R)
+        mvnResult = lapply(splitData, energy, B = B)
         
       }
       

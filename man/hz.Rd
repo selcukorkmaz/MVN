@@ -4,7 +4,14 @@
 \alias{hz}
 \title{Henze-Zirkler Test for Multivariate Normality}
 \usage{
-hz(data, use_population = TRUE, tol = 1e-25)
+hz(
+  data,
+  use_population = TRUE,
+  tol = 1e-25,
+  bootstrap = FALSE,
+  B = 1000,
+  cores = 1
+)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
@@ -12,6 +19,15 @@ hz(data, use_population = TRUE, tol = 1e-25)
 \item{use_population}{Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.}
 
 \item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.}
+
+\item{bootstrap}{Logical; if \code{TRUE}, compute p-value via bootstrap
+resampling. Default is \code{FALSE}.}
+
+\item{B}{Integer; number of bootstrap replicates used when
+\code{bootstrap = TRUE}. Default is \code{1000}.}
+
+\item{cores}{Integer; number of cores for parallel computation when
+\code{bootstrap = TRUE}. Default is 1.}
 }
 \value{
 A data frame with one row, containing the following columns:

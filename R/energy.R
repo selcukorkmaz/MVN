@@ -5,7 +5,7 @@ utils::globalVariables("mvnorm.e")
 #' to estimate the null distribution of the test statistic.
 #'
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
-#' @param R Integer; number of bootstrap replicates to estimate the null distribution. Default is 1000.
+#' @param B Integer; number of bootstrap replicates to estimate the null distribution. Default is 1000.
 #' @param seed Optional integer to set the random seed for reproducibility.
 #'
 #' @return A data frame with one row containing the following columns:
@@ -16,7 +16,7 @@ utils::globalVariables("mvnorm.e")
 #' @examples
 #' \dontrun{
 #' data <- iris[1:50, 1:4]
-#' energy_result <- energy(data, R = 500)
+#' energy_result <- energy(data, B = 500)
 #' energy_result
 #' }
 #'
@@ -24,7 +24,7 @@ utils::globalVariables("mvnorm.e")
 #' @importFrom stats complete.cases rnorm
 #' @importFrom moments skewness kurtosis
 #' @export
-energy <- function(data, R = 1000, seed = 123) {
+energy <- function(data, B = 1000, seed = 123) {
   # Convert to data frame and drop non-numeric columns
   df <- as.data.frame(data)
   num_cols <- vapply(df, is.numeric, logical(1))
@@ -56,13 +56,13 @@ energy <- function(data, R = 1000, seed = 123) {
   boot_obj <- boot::boot(
     data      = x,
     statistic = mvnorm.e,
-    R         = R,
+    R         = B,
     sim       = "parametric",
     ran.gen   = ran_gen
   )
   
   # Compute p-value and observed statistic
-  if (R > 0) {
+  if (B > 0) {
     p_val <- 1 - mean(boot_obj$t < boot_obj$t0)
   } else {
     p_val <- NA_real_

@@ -7,6 +7,12 @@
 #' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
 #' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix.
 #' Default is \code{1e-25}.
+#' @param bootstrap Logical; if \code{TRUE}, compute p-values via a bootstrap
+#'   distribution of the test statistics. Default is \code{FALSE}.
+#' @param B Integer; number of bootstrap replicates. Only used when
+#'   \code{bootstrap = TRUE}. Default is \code{1000}.
+#' @param cores Integer; number of cores to use when \code{bootstrap = TRUE}.
+#'   Parallelisation is done via \code{parallel::mclapply}. Default is 1.
 #'
 #' @return A data frame with two rows, one for Mardia's skewness test and one for the kurtosis test.
 #' Each row contains the name of the test (\code{Test}), the test statistic (\code{Statistic}),
@@ -21,7 +27,8 @@
 #'
 #' @importFrom stats cov complete.cases pchisq pnorm
 #' @export
-mardia <- function(data, use_population = TRUE, tol = 1e-25) {
+mardia <- function(data, use_population = TRUE, tol = 1e-25,
+                   bootstrap = FALSE, B = 1000, cores = 1) {
   # Convert to data frame
   df <- as.data.frame(data)
   
@@ -86,6 +93,46 @@ mardia <- function(data, use_population = TRUE, tol = 1e-25) {
   kurt_stat <- (g2p - p * (p + 2)) * sqrt(n / (8 * p * (p + 2)))
   p_kurt    <- 2 * stats::pnorm(abs(kurt_stat), lower.tail = FALSE)
   
+  if (bootstrap && B > 0) {
+    boot_fun <- function(i) {
+      idx <- sample.int(n, n, replace = TRUE)
+      xb <- x[idx, , drop = FALSE]
+      xb_c <- scale(xb, center = TRUE, scale = FALSE)
+      Sb <- if (use_population) {
+        ((n - 1) / n) * stats::cov(xb_c)
+      } else {
+        stats::cov(xb_c)
+      }
+      invSb <- tryCatch(solve(Sb, tol = tol),
+                        error = function(e) return(matrix(NA, ncol = ncol(Sb), nrow = nrow(Sb))))
+      if (anyNA(invSb)) return(c(NA_real_, NA_real_))
+      Db <- xb_c %*% invSb %*% t(xb_c)
+      g1b <- sum(Db^3) / n^2
+      g2b <- sum((diag(Db))^2) / n
+      skew_b <- if (n < 20) {
+        n * k * g1b / 6
+      } else {
+        n * g1b / 6
+      }
+      kurt_b <- (g2b - p * (p + 2)) * sqrt(n / (8 * p * (p + 2)))
+      c(skew_b, kurt_b)
+    }
+    
+    if (cores > 1) {
+      boot_stats <- parallel::mclapply(seq_len(B), boot_fun, mc.cores = cores)
+    } else {
+      boot_stats <- lapply(seq_len(B), boot_fun)
+    }
+    boot_mat <- do.call(rbind, boot_stats)
+    boot_mat <- boot_mat[complete.cases(boot_mat), , drop = FALSE]
+    if (nrow(boot_mat) > 0) {
+      p_skew <- mean(boot_mat[, 1] >= skew_stat)
+      p_kurt <- mean(abs(boot_mat[, 2]) >= abs(kurt_stat))
+    } else {
+      p_skew <- NA_real_
+      p_kurt <- NA_real_
+    }
+  }
   
   # Assemble results
   result <- data.frame(

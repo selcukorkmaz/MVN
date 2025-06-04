@@ -4,7 +4,14 @@
 \alias{mardia}
 \title{Mardia's Test for Multivariate Normality}
 \usage{
-mardia(data, use_population = TRUE, tol = 1e-25)
+mardia(
+  data,
+  use_population = TRUE,
+  tol = 1e-25,
+  bootstrap = FALSE,
+  B = 1000,
+  cores = 1
+)
 }
 \arguments{
 \item{data}{A numeric matrix or data frame with observations in rows and variables in columns.}
@@ -13,6 +20,15 @@ mardia(data, use_population = TRUE, tol = 1e-25)
 
 \item{tol}{Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix.
 Default is \code{1e-25}.}
+
+\item{bootstrap}{Logical; if \code{TRUE}, compute p-values via a bootstrap
+distribution of the test statistics. Default is \code{FALSE}.}
+
+\item{B}{Integer; number of bootstrap replicates. Only used when
+\code{bootstrap = TRUE}. Default is \code{1000}.}
+
+\item{cores}{Integer; number of cores to use when \code{bootstrap = TRUE}.
+Parallelisation is done via \code{parallel::mclapply}. Default is 1.}
 }
 \value{
 A data frame with two rows, one for Mardia's skewness test and one for the kurtosis test.

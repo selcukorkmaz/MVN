@@ -5,6 +5,12 @@
 #' @param data A numeric matrix or data frame with observations in rows and variables in columns.
 #' @param use_population Logical; if \code{TRUE}, uses the population covariance estimator \eqn{\frac{n-1}{n} \times \Sigma}; otherwise uses the sample covariance. Default is \code{TRUE}.
 #' @param tol Numeric tolerance passed to \code{\link[base]{solve}} when inverting the covariance matrix. Default is \code{1e-25}.
+#' @param bootstrap Logical; if \code{TRUE}, compute p-value via bootstrap
+#'   resampling. Default is \code{FALSE}.
+#' @param B Integer; number of bootstrap replicates used when
+#'   \code{bootstrap = TRUE}. Default is \code{1000}.
+#' @param cores Integer; number of cores for parallel computation when
+#'   \code{bootstrap = TRUE}. Default is 1.
 #'
 #' @return A data frame with one row, containing the following columns:
 #' \code{Test}, the name of the test ("Henze-Zirkler"); 
@@ -20,7 +26,8 @@
 #'
 #' @importFrom stats cov complete.cases plnorm
 #' @export
-hz <- function(data, use_population = TRUE, tol = 1e-25) {
+hz <- function(data, use_population = TRUE, tol = 1e-25,
+               bootstrap = FALSE, B = 1000, cores = 1) {
   # Convert to data frame and drop non-numeric columns
   df <- as.data.frame(data)
   numeric_cols <- sapply(df, is.numeric)
@@ -89,12 +96,89 @@ hz <- function(data, use_population = TRUE, tol = 1e-25) {
   # P-value
   p_value <- stats::plnorm(hz_stat, pmu, psi, lower.tail = FALSE)
   
-  # Return result
-  result <- data.frame(
-    Test    = "Henze-Zirkler",
-    Statistic = hz_stat,
-    p.value = p_value,
-    stringsAsFactors = FALSE
-  )
+  if (bootstrap && B > 0) {
+    # Estimate parametric-null parameters from the observed data:
+    mu_hat    <- colMeans(x)                  # sample mean of original x
+    # We want Σ̂ for drawing N(mu_hat, Σ̂). Use the same "population vs. sample" rule:
+    if (use_population) {
+      Sigma_hat <- ((n - 1) / n) * stats::cov(x_centered)
+    } else {
+      Sigma_hat <- stats::cov(x_centered)
+    }
+    
+    boot_fun <- function(i) {
+      # 1) Draw a parametric‐bootstrap sample of size n from N(mu_hat, Sigma_hat)
+      xb <- MASS::mvrnorm(n = n, mu = mu_hat, Sigma = Sigma_hat)
+      
+      # 2) Center that bootstrap sample
+      xb_c <- scale(xb, center = TRUE, scale = FALSE)
+      
+      # 3) Recompute covariance for the bootstrap draw (same rule as before)
+      Sb <- if (use_population) {
+        ((n - 1) / n) * stats::cov(xb_c)
+      } else {
+        stats::cov(xb_c)
+      }
+      
+      # 4) Invert Sb (if singular, return NA to drop this replicate)
+      invSb <- tryCatch(
+        solve(Sb, tol = tol),
+        error = function(e) return(matrix(NA, ncol = ncol(Sb), nrow = nrow(Sb)))
+      )
+      if (anyNA(invSb)) return(NA_real_)
+      
+      # 5) Compute pairwise Mahalanobis distances for the bootstrap sample
+      Db   <- xb_c %*% invSb %*% t(xb_c)
+      Djb  <- diag(Db)
+      Djkb <- outer(Djb, Djb, "+") - 2 * Db
+      
+      # 6) Use the same smoothing parameter formula (n, p are unchanged)
+      bb <- (n^(1/(p + 4))) * (((2 * p + 1) / 4)^(1/(p + 4))) / sqrt(2)
+      
+      # 7) Compute HZ on the bootstrap sample
+      part1b <- sum(exp(-(bb^2)/2 * Djkb)) / (n^2)
+      part2b <- 2 * (1 + bb^2)^(-p/2) * sum(exp(-(bb^2)/(2 * (1 + bb^2)) * Djb)) / n
+      hz_b   <- n * (part1b - part2b + (1 + 2 * bb^2)^(-p/2))
+      return(hz_b)
+    }
+    
+    # Run B replicates (in parallel if cores > 1)
+    if (cores > 1) {
+      boot_stats <- parallel::mclapply(seq_len(B), boot_fun, mc.cores = cores)
+    } else {
+      boot_stats <- lapply(seq_len(B), boot_fun)
+    }
+    
+    # Collect and discard any NA (singular‐covariance draws)
+    boot_vec <- unlist(boot_stats)
+    boot_vec <- boot_vec[!is.na(boot_vec)]
+    
+    if (length(boot_vec) > 0) {
+      # 8) Now compute the parametric‐bootstrap p-value:
+      p_value <- mean(boot_vec >= hz_stat)
+    } else {
+      p_value <- NA_real_
+    }
+  }
+  
+  if (bootstrap) {
+    result <- data.frame(
+      Test         = "Henze-Zirkler",
+      Statistic    = hz_stat,
+      p.value      = p_value,
+      Method       = "bootstrap",
+      N.Boot       = length(boot_vec),
+      stringsAsFactors = FALSE
+    )
+  } else{
+    # Return result
+    result <- data.frame(
+      Test    = "Henze-Zirkler",
+      Statistic = hz_stat,
+      p.value = p_value,
+      stringsAsFactors = FALSE
+    )
+  }
+  
   return(result)
 }
