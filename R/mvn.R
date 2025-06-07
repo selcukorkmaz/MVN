@@ -18,7 +18,7 @@ utils::globalVariables(c(
 #' @param descriptives A logical value indicating whether to compute descriptive statistics (mean, standard deviation, skewness, and kurtosis) for each variable before conducting multivariate normality or outlier analyses. Default is TRUE.
 #' @param transform A character string specifying a marginal transformation to apply to each variable before analysis. Options are "none" (no transformation), "log" (natural logarithm), "sqrt" (square root), and "square" (square of the values). The default is "none".
 #' @param impute A character string specifying method for handling missing data. One of \code{"none"}, \code{"mean"}, \code{"median"}, or \code{"mice"}. Default: \code{"none"}.
-#' @param power_family A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".
+#' @param power_family A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yjPower" (Yeo-Johnson transformation for real-valued data). Default is "none".
 #' @param power_transform_type A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".
 #' @param bootstrap Logical; if \code{TRUE}, p-values for Mardia, Henze-Zirkler
 #'   and Royston tests are obtained via bootstrap resampling. Default is
@@ -702,7 +702,7 @@ mvn <- function(data,
   }
   
   if (power_family != "none") {
-    result = c(result, list(box_cox_lambda = powerTransformLambda))
+    result = c(result, list(power_transform_lambda = powerTransformLambda))
 
   } 
   
