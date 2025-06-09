@@ -49,9 +49,13 @@ Collate:
     'summary.mvn.R'
     'impute_missing.R'
 Description:
-    A suite of multivariate normality tests (Mardia, Henze–Zirkler, Henze-Wagner, Royston,
-    Doornik–Hansen, Energy), univariate diagnostics, robust outlier detection,
-    bivariate density plots, and Box–Cox transformations (Korkmaz et al, (2014), <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>).
+    A comprehensive suite for assessing multivariate normality using six statistical tests 
+    (Mardia, Henze–Zirkler, Henze–Wagner, Royston, Doornik–Hansen, Energy). 
+    Also includes univariate diagnostics, bivariate density visualization, robust outlier 
+    detection, power transformations (e.g., Box–Cox, Yeo–Johnson), and imputation strategies 
+    ("mean", "median", "mice") for handling missing data. Bootstrap resampling is supported 
+    for selected tests to improve p-value accuracy in small samples. 
+    Diagnostic plots are available via both ggplot2 and interactive Plotly visualizations. See Korkmaz et al. (2014) <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>.
 Encoding: UTF-8
 License: MIT + file LICENSE
 URL: https://selcukorkmaz.github.io/mvn-tutorial/, https://github.com/selcukorkmaz/MVN, http://biosoft.erciyes.edu.tr/app/MVN

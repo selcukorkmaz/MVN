@@ -61,7 +61,7 @@ Default is 1.}
 
 \item{multivariate_outlier_method}{A character string that specifies the method used for detecting multivariate outliers. Options are "none" (no outlier detection), "quan" (robust Mahalanobis distance based on quantile cutoff), and "adj" (adjusted robust weights with a significance threshold). Default is "none".}
 
-\item{power_family}{A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yeo_johnson" (Yeo-Johnson transformation for real-valued data). Default is "none".}
+\item{power_family}{A character string specifying the type of power transformation family to apply before analysis. Options include "none" (no transformation), "bcPower" (Box-Cox transformation for positive data), "bcnPower" (Box-Cox transformation that allows for negatives), and "yjPower" (Yeo-Johnson transformation for real-valued data). Default is "none".}
 
 \item{power_transform_type}{A character string indicating whether to use the "optimal" or "rounded" lambda value for the selected power transformation. "optimal" uses the estimated value with maximum likelihood, while "rounded" uses the closest integer value for interpretability. Default is "optimal".}
 

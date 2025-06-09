@@ -2,7 +2,7 @@ utils::globalVariables(c(
   "everything", "Variable", "Value", "Min", "Max", "Mean", "SD", 
   "Density", "density", "Sample", "Theoretical", 
   "q_sample", "q_theoretical", "slope", "intercept", 
-  "x", "y", "x_var", "y_var"
+  "x", "y", "x_var", "y_var", "qq", "q_sample_high", "q_sample_low", "q_theoretical_high", "q_theoretical_low"
 ))
 #' Diagnostic Plots for Univariate and Multivariate Data
 #'
@@ -153,28 +153,33 @@ univariate_diagnostic_plot <- function(data,
     # Step 2: Compute theoretical quantiles and sample quantiles
     qq_data <- df_long %>%
       group_by(Variable) %>%
-      mutate(Theoretical = qqnorm(Value, plot.it = FALSE)$x,
-             Sample = sort(Value)) %>%
-      ungroup()
+      mutate(
+        qq = list(qqnorm(Value, plot.it = FALSE)),
+        Theoretical = qq[[1]]$x,
+        Sample = qq[[1]]$y
+      ) %>%
+      ungroup() %>%
+      select(-qq)  # optional: remove the list column
+    
+    
     
     # Step 3: Compute slope and intercept for each Q-Q line (like qqline())
     line_params <- qq_data %>%
       group_by(Variable) %>%
-      reframe(
-        q_sample = quantile(Sample, probs = c(0.25, 0.75), na.rm = TRUE),
-        q_theoretical = quantile(
-          Theoretical,
-          probs = c(0.25, 0.75),
-          na.rm = TRUE
-        ),
+      summarise(
+        q_sample_low = quantile(Sample, 0.25, na.rm = TRUE),
+        q_sample_high = quantile(Sample, 0.75, na.rm = TRUE),
+        q_theoretical_low = quantile(Theoretical, 0.25, na.rm = TRUE),
+        q_theoretical_high = quantile(Theoretical, 0.75, na.rm = TRUE),
         .groups = "drop"
       ) %>%
-      group_by(Variable) %>%
-      reframe(
-        slope = diff(q_sample) / diff(q_theoretical),
-        intercept = q_sample[1] - (diff(q_sample) / diff(q_theoretical)) * q_theoretical[1],
-        .groups = "drop"
-      )
+      mutate(
+        slope = (q_sample_high - q_sample_low) / (q_theoretical_high - q_theoretical_low),
+        intercept = q_sample_low - slope * q_theoretical_low
+      ) %>%
+      select(Variable, slope, intercept)
+    
+    
     
     # Step 4: Merge slope/intercept into qq_data
     qq_data <- left_join(qq_data, line_params, by = "Variable")
