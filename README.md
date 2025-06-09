@@ -12,14 +12,14 @@
 
 ## Overview
 
-The MVN R package provides a comprehensive framework for assessing multivariate normality, a key assumption in many parametric multivariate statistical methods such as:
+MVN is an R package that provides a comprehensive and user-friendly framework for assessing multivariate normality—a key assumption in many multivariate statistical methods such as:
 
 - MANOVA
 - Linear Discriminant Analysis
 - Principal Component Analysis
 - Canonical Correlation Analysis
 
-Multivariate normality assessment is critical, and no single method is universally optimal. MVN combines several numerical and graphical tools to offer reliable evaluations across diverse scenarios.
+Multivariate normality is often overlooked or improperly tested. The MVN package addresses this by integrating robust numerical tests, graphical diagnostics, and transformation tools, offering clear insights into the distributional characteristics of your multivariate data.
 
 ---
 
@@ -28,6 +28,7 @@ Multivariate normality assessment is critical, and no single method is universal
 - **Multivariate Normality Tests:**
   - Mardia's Test
   - Henze-Zirkler’s Test
+  - Henze-Wagner’s Test
   - Royston’s Test
   - Doornik-Hansen's Test
   - Energy Test
@@ -43,17 +44,17 @@ Multivariate normality assessment is critical, and no single method is universal
 - **Univariate Normality Checks:**
   - Multiple tests and visualizations for marginal distributions
 
-- **Data Transformation Options:**
-  - Logarithmic
-  - Square Root
-  - Square
-  - Box-Cox (with lambda selection)
-  - Yeo-Johnson (with lambda selection)
+- **Transformations & Imputation**
+  - Log, square root, and square transformations
+  - Optimal Box–Cox and Yeo–Johnson power transformations
+  - Missing data handling via mean, median, or MICE imputation
 
-- **Descriptive Statistics Output**
+- **Bootstrap Support**
+  -  Optional bootstrap p-values for Mardia, Henze–Zirkler, and Royston tests for improved small-sample inference
 
-- **Subset (grouped) analysis support**
-
+- **Descriptive Statistics and Group-Wise Analysis**
+  -  Grouped summaries using the subset argument
+  -  Integration with tidy data pipelines
 ---
 
 ## Installation
@@ -70,7 +71,7 @@ To install the development version from GitHub:
 devtools::install_github("selcukorkmaz/MVN")
 ```
 
-## Usage Example
+## Basic Usage
 
 ```r
 library(MVN)
@@ -78,26 +79,40 @@ library(MVN)
 # Run MVN tests and diagnostics on iris data
 result <- mvn(
   data = iris[1:50, 1:3],
-  mvn_test = "hz",
-  power_transform = "yeo_johnson"
-)
+  mvn_test = "hz"
+  )
 
 # View results
-summary(result)
+summary(result, "mvn")
 ```
 
-## Shiny App
+For grouped analysis:
 
-A web-based shiny app is available here:
+```r
+mvn(data = iris, subset = "Species", mvn_test = "hz")
+```
+
+
+## Shiny Web App
+
+Explore MVN’s features via a user-friendly web interface:
 http://biosoft.erciyes.edu.tr/app/MVN
 
 
-## Tutorial
-A step-by-step tutorial is available here:
+## Documentation and Tutorial
+
+Full documentation and an interactive tutorial site are available at:
 https://selcukorkmaz.github.io/mvn-tutorial/
 
 
 ## Citation
 
+Please cite MVN in your publications using:
+
 Korkmaz S, Goksuluk D, Zararsiz G. MVN: An R Package for Assessing Multivariate Normality. The R Journal. 2014; 6(2):151-162.
 https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf
+
+
+## License
+
+MVN is released under the MIT license.
