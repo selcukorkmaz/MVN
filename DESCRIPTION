@@ -54,7 +54,7 @@ Description:
     Also includes univariate diagnostics, bivariate density visualization, robust outlier 
     detection, power transformations (e.g., Box–Cox, Yeo–Johnson), and imputation strategies 
     ("mean", "median", "mice") for handling missing data. Bootstrap resampling is supported 
-    for selected tests to improve p-value accuracy in small samples. 
+    for selected tests to improve p-value accuracy in small samples.
     Diagnostic plots are available via both 'ggplot2' and interactive 'plotly' visualizations. See Korkmaz et al. (2014) <https://journal.r-project.org/archive/2014-2/korkmaz-goksuluk-zararsiz.pdf>.
 Encoding: UTF-8
 License: MIT + file LICENSE
