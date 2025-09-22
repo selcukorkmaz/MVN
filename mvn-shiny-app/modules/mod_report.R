@@ -87,6 +87,15 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
               format(opts$alpha, digits = 3)
             )
           ),
+          if (isTRUE(opts$bootstrap) || identical(opts$mvn_test, "energy")) {
+            shiny::p(
+              sprintf(
+                "Bootstrap settings: B = %d, cores = %d.",
+                opts$B,
+                opts$cores
+              )
+            )
+          },
           if (isTRUE(is.finite(p_val))) {
             shiny::p(sprintf("Reported p-value: %s", formatC(p_val, digits = 3, format = "g")))
           },
