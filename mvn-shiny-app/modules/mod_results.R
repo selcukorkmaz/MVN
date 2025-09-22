@@ -33,11 +33,10 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
   shiny::moduleServer(
     id,
     function(input, output, session) {
-      analysis_result <- shiny::reactive({
-        df <- data_for_analysis()
-        opts <- settings()
-        shiny::req(df, opts)
+      analysis_result <- shiny::reactiveVal(NULL)
+      analysis_needs_run <- shiny::reactiveVal(TRUE)
 
+      prepare_analysis_data <- function(df) {
         df <- as.data.frame(df)
         group <- subset_var()
         if (!is.null(group) && !nzchar(group)) {
@@ -56,33 +55,99 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
           return(NULL)
         }
 
-        analysis_df <- if (is.null(group)) {
-          df[, numeric_cols, drop = FALSE]
-        } else {
-          df[, c(numeric_cols, group), drop = FALSE]
+        list(
+          data = if (is.null(group)) {
+            df[, numeric_cols, drop = FALSE]
+          } else {
+            df[, c(numeric_cols, group), drop = FALSE]
+          },
+          group = group,
+          numeric_cols = numeric_cols
+        )
+      }
+
+      observeEvent(settings(), {
+        opts <- settings()
+        df <- data_for_analysis()
+        if (is.null(df) || is.null(opts)) {
+          analysis_result(NULL)
+          analysis_needs_run(TRUE)
+          return()
         }
 
-        tryCatch({
+        prepared <- prepare_analysis_data(df)
+        if (is.null(prepared)) {
+          analysis_result(NULL)
+          analysis_needs_run(TRUE)
+          return()
+        }
+
+        vars_count <- length(prepared$numeric_cols)
+        obs_count <- nrow(prepared$data)
+        if (vars_count > obs_count && !identical(opts$mvn_test, "hw")) {
+          shiny::showNotification(
+            "Number of variables exceeds the number of observations. Henze–Wagner test is recommended in this scenario.",
+            type = "warning"
+          )
+        }
+
+        result <- tryCatch({
           MVN::mvn(
-            data = analysis_df,
-            subset = group,
+            data = prepared$data,
+            subset = prepared$group,
             mvn_test = opts$mvn_test,
             univariate_test = opts$univariate_test,
             multivariate_outlier_method = opts$outlier_method,
             descriptives = isTRUE(opts$descriptives),
             bootstrap = isTRUE(opts$bootstrap),
             alpha = opts$alpha,
+            B = opts$B,
+            cores = opts$cores,
             tidy = TRUE
           )
         }, error = function(e) {
           shiny::showNotification(paste("Analysis failed:", e$message), type = "error")
           NULL
         })
-      })
+
+        analysis_result(result)
+        analysis_needs_run(is.null(result))
+      }, ignoreNULL = FALSE)
+
+      data_initialized <- shiny::reactiveVal(FALSE)
+      observeEvent(data_for_analysis(), {
+        df <- data_for_analysis()
+        if (!isTRUE(data_initialized())) {
+          data_initialized(TRUE)
+        } else {
+          analysis_result(NULL)
+          analysis_needs_run(TRUE)
+        }
+        if (is.null(df)) {
+          analysis_result(NULL)
+          analysis_needs_run(TRUE)
+        }
+      }, ignoreNULL = FALSE)
+
+      subset_initialized <- shiny::reactiveVal(FALSE)
+      observeEvent(subset_var(), {
+        if (!isTRUE(subset_initialized())) {
+          subset_initialized(TRUE)
+          return()
+        }
+        analysis_result(NULL)
+        analysis_needs_run(TRUE)
+      }, ignoreNULL = FALSE)
 
       output$results_message <- shiny::renderUI({
         res <- analysis_result()
         if (is.null(res)) {
+          if (isTRUE(analysis_needs_run())) {
+            return(shiny::div(
+              class = "alert alert-info",
+              "Click Run analysis to compute results with the current configuration."
+            ))
+          }
           return(shiny::div(class = "text-muted", "Run the analysis to view results."))
         }
 

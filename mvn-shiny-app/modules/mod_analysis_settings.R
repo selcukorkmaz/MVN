@@ -1,6 +1,14 @@
 mod_analysis_settings_ui <- function(id) {
   ns <- shiny::NS(id)
 
+  available_cores <- tryCatch(
+    suppressWarnings(parallel::detectCores(logical = FALSE)),
+    error = function(e) NA_integer_
+  )
+  if (!is.numeric(available_cores) || !is.finite(available_cores) || available_cores < 1) {
+    available_cores <- 1
+  }
+
   bslib::layout_sidebar(
     sidebar = bslib::card(
       bslib::card_header("Configure analysis"),
@@ -17,6 +25,7 @@ mod_analysis_settings_ui <- function(id) {
         ),
         selected = "hz"
       ),
+      shiny::uiOutput(ns("mvn_warning")),
       shiny::selectInput(
         ns("univariate_test"),
         label = "Univariate normality test",
@@ -33,14 +42,33 @@ mod_analysis_settings_ui <- function(id) {
         ns("outlier_method"),
         label = "Multivariate outliers",
         choices = c(
-          "None" = "none",
           "Robust quantile (quan)" = "quan",
           "Adjusted robust weights (adj)" = "adj"
         ),
-        selected = "none"
+        selected = "quan"
       ),
       shiny::checkboxInput(ns("descriptives"), label = "Compute descriptive statistics", value = TRUE),
       shiny::checkboxInput(ns("bootstrap"), label = "Bootstrap p-values (where available)", value = FALSE),
+      shiny::conditionalPanel(
+        condition = sprintf("input['%s'] || input['%s'] == 'energy'", ns("bootstrap"), ns("mvn_test")),
+        shiny::numericInput(
+          ns("bootstrap_B"),
+          label = "Bootstrap replicates (B)",
+          value = 1000,
+          min = 100,
+          max = 5000,
+          step = 100
+        ),
+        shiny::numericInput(
+          ns("bootstrap_cores"),
+          label = "Number of cores",
+          value = 1,
+          min = 1,
+          max = available_cores,
+          step = 1
+        ),
+        shiny::helpText("Energy test always uses bootstrap replicates. Adjust settings to control computation time.")
+      ),
       shiny::numericInput(ns("alpha"), label = "Significance level (alpha)", value = 0.05, min = 0.0001, max = 0.25, step = 0.01),
       shiny::actionButton(ns("apply_settings"), label = "Run analysis", class = "btn-primary")
     ),
@@ -55,7 +83,11 @@ mod_analysis_settings_ui <- function(id) {
   )
 }
 
-mod_analysis_settings_server <- function(id) {
+mod_analysis_settings_server <- function(id, processed_data = NULL) {
+  if (!is.null(processed_data)) {
+    stopifnot(is.function(processed_data))
+  }
+
   shiny::moduleServer(
     id,
     function(input, output, session) {
@@ -77,7 +109,6 @@ mod_analysis_settings_server <- function(id) {
       )
 
       outlier_labels <- c(
-        none = "None",
         quan = "Robust quantile",
         adj = "Adjusted robust weights"
       )
@@ -87,15 +118,44 @@ mod_analysis_settings_server <- function(id) {
         if (!is.finite(alpha_value) || alpha_value <= 0) {
           alpha_value <- 0.05
         }
+        mvn_method <- input$mvn_test
+        if (is.null(mvn_method) || !(mvn_method %in% names(mvn_labels))) {
+          mvn_method <- "hz"
+        }
+        univariate_method <- input$univariate_test
+        if (is.null(univariate_method) || !(univariate_method %in% names(univariate_labels))) {
+          univariate_method <- "AD"
+        }
+        outlier_method <- input$outlier_method
+        if (is.null(outlier_method) || !(outlier_method %in% names(outlier_labels))) {
+          outlier_method <- "quan"
+        }
+        bootstrap_B <- suppressWarnings(as.integer(round(input$bootstrap_B)))
+        if (!is.finite(bootstrap_B) || bootstrap_B <= 0) {
+          bootstrap_B <- 1000L
+        }
+        cores_value <- suppressWarnings(as.integer(round(input$bootstrap_cores)))
+        if (!is.finite(cores_value) || cores_value <= 0) {
+          cores_value <- 1L
+        }
+        max_cores <- tryCatch(
+          suppressWarnings(parallel::detectCores(logical = FALSE)),
+          error = function(e) NA_integer_
+        )
+        if (is.numeric(max_cores) && is.finite(max_cores) && max_cores >= 1) {
+          cores_value <- min(cores_value, max_cores)
+        }
         list(
-          mvn_test = input$mvn_test,
-          test_label = mvn_labels[[input$mvn_test]],
-          univariate_test = input$univariate_test,
-          univariate_label = univariate_labels[[input$univariate_test]],
-          outlier_method = input$outlier_method,
-          outlier_label = outlier_labels[[input$outlier_method]],
+          mvn_test = mvn_method,
+          test_label = mvn_labels[[mvn_method]],
+          univariate_test = univariate_method,
+          univariate_label = univariate_labels[[univariate_method]],
+          outlier_method = outlier_method,
+          outlier_label = outlier_labels[[outlier_method]],
           descriptives = isTRUE(input$descriptives),
           bootstrap = isTRUE(input$bootstrap),
+          B = bootstrap_B,
+          cores = cores_value,
           alpha = alpha_value
         )
       }
@@ -106,13 +166,61 @@ mod_analysis_settings_server <- function(id) {
         ignoreNULL = FALSE
       )
 
+      data_dims <- shiny::reactive({
+        if (is.null(processed_data)) {
+          return(NULL)
+        }
+        df <- processed_data()
+        if (is.null(df)) {
+          return(NULL)
+        }
+        df <- as.data.frame(df)
+        list(n = nrow(df), p = ncol(df))
+      })
+
+      output$mvn_warning <- shiny::renderUI({
+        dims <- data_dims()
+        if (is.null(dims) || !is.numeric(dims$n) || !is.numeric(dims$p)) {
+          return(NULL)
+        }
+        if (dims$p <= dims$n) {
+          return(NULL)
+        }
+        if (identical(input$mvn_test, "hw")) {
+          shiny::div(
+            class = "alert alert-info",
+            sprintf(
+              "High-dimensional data detected (%d variables, %d observations). Henze–Wagner test is suitable for this scenario.",
+              dims$p,
+              dims$n
+            )
+          )
+        } else {
+          shiny::div(
+            class = "alert alert-warning",
+            sprintf(
+              "%d variables and %d observations detected. Consider switching to the Henze–Wagner test for better performance.",
+              dims$p,
+              dims$n
+            )
+          )
+        }
+      })
+
       output$settings_summary <- shiny::renderPrint({
         opts <- settings()
         cat("Multivariate test:", opts$test_label, "\n")
         cat("Univariate test:", opts$univariate_label, "\n")
         cat("Outlier detection:", opts$outlier_label, "\n")
         cat("Descriptives:", if (isTRUE(opts$descriptives)) "Yes" else "No", "\n")
-        cat("Bootstrap:", if (isTRUE(opts$bootstrap)) "Enabled" else "Disabled", "\n")
+        bootstrap_text <- if (isTRUE(opts$bootstrap)) {
+          sprintf("Enabled (B = %d, cores = %d)", opts$B, opts$cores)
+        } else if (identical(opts$mvn_test, "energy")) {
+          sprintf("Energy test uses B = %d, cores = %d", opts$B, opts$cores)
+        } else {
+          "Disabled"
+        }
+        cat("Bootstrap:", bootstrap_text, "\n")
         cat("Alpha:", format(opts$alpha, digits = 3), "\n")
       })
 

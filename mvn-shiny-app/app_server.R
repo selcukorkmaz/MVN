@@ -1,7 +1,10 @@
 app_server <- function(input, output, session) {
   data_prep <- mod_data_prep_server("data_prep")
 
-  analysis_settings <- mod_analysis_settings_server("analysis")
+  analysis_settings <- mod_analysis_settings_server(
+    "analysis",
+    processed_data = data_prep$processed_data
+  )
 
   analysis <- mod_results_server(
     "results",
