@@ -11,11 +11,16 @@ mod_report_ui <- function(id) {
         shiny::downloadButton(ns("download_results"), label = "Analysis object (RDS)", class = "btn-outline-primary"),
         shiny::downloadButton(ns("download_results_csv"), label = "Analysis tables (CSV)", class = "btn-outline-secondary"),
         shiny::downloadButton(ns("download_parameters_yaml"), label = "Parameters (YAML)", class = "btn-outline-secondary"),
-        shiny::downloadButton(ns("download_parameters_json"), label = "Parameters (JSON)", class = "btn-outline-secondary")
+        shiny::downloadButton(ns("download_parameters_json"), label = "Parameters (JSON)", class = "btn-outline-secondary"),
+        shiny::downloadButton(ns("download_rmd_template"), label = "R Markdown template", class = "btn-outline-secondary")
       )
     ),
     bslib::layout_column_wrap(
       width = 1,
+      bslib::card(
+        bslib::card_header("Workflow summary"),
+        shiny::uiOutput(ns("parameter_log"))
+      ),
       bslib::card(
         bslib::card_header("Analysis snapshot"),
         shiny::uiOutput(ns("report_summary"))
@@ -180,7 +185,144 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           }
         }
 
+        workflow <- list(
+          base_file_name = base_name(),
+          generated_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+        )
+        mvn_version <- tryCatch(as.character(utils::packageVersion("MVN")), error = function(e) NULL)
+        if (!is.null(mvn_version)) {
+          workflow$app_version <- mvn_version
+        }
+        params$workflow <- workflow
+
         params
+      }
+
+      format_label <- function(value) {
+        label <- gsub("_", " ", as.character(value))
+        tools::toTitleCase(label)
+      }
+
+      format_parameter_value <- function(value) {
+        if (is.null(value)) {
+          return("\u2014")
+        }
+        if (inherits(value, c("POSIXct", "POSIXt", "Date"))) {
+          return(as.character(value))
+        }
+        if (is.logical(value)) {
+          return(paste(ifelse(value, "Yes", "No"), collapse = ", "))
+        }
+        if (is.numeric(value)) {
+          return(paste(format(value, digits = 3, trim = TRUE), collapse = ", "))
+        }
+        if (length(value) > 1) {
+          return(paste(as.character(value), collapse = ", "))
+        }
+        as.character(value)
+      }
+
+      flatten_parameters <- function(x, path = character()) {
+        rows <- list()
+        if (is.list(x) && length(x)) {
+          nms <- names(x)
+          if (is.null(nms)) {
+            nms <- as.character(seq_along(x))
+          }
+          for (idx in seq_along(x)) {
+            child <- x[[idx]]
+            child_name <- nms[[idx]]
+            rows <- c(rows, flatten_parameters(child, c(path, child_name)))
+          }
+          return(rows)
+        }
+        section <- if (length(path) > 1) {
+          paste(vapply(path[-length(path)], format_label, character(1)), collapse = " \u203a ")
+        } else {
+          "General"
+        }
+        parameter <- if (length(path)) format_label(path[length(path)]) else "Value"
+        rows[[1]] <- list(section = section, parameter = parameter, value = format_parameter_value(x))
+        rows
+      }
+
+      build_parameter_table <- function(params) {
+        rows <- flatten_parameters(params)
+        rows <- Filter(length, rows)
+        if (!length(rows)) {
+          return(shiny::div(class = "text-muted", "Adjust analysis settings and run the workflow to capture parameters."))
+        }
+        df <- do.call(rbind, lapply(rows, function(row) {
+          data.frame(row, stringsAsFactors = FALSE, check.names = FALSE)
+        }))
+        df$section[df$section == ""] <- "General"
+        table_rows <- apply(df, 1, function(row) {
+          shiny::tags$tr(
+            shiny::tags$td(row[["section"]]),
+            shiny::tags$td(row[["parameter"]]),
+            shiny::tags$td(row[["value"]])
+          )
+        })
+        shiny::tags$table(
+          class = "table table-sm table-hover mb-0",
+          shiny::tags$thead(
+            shiny::tags$tr(
+              shiny::tags$th("Section"),
+              shiny::tags$th("Parameter"),
+              shiny::tags$th("Value")
+            )
+          ),
+          shiny::tags$tbody(table_rows)
+        )
+      }
+
+      build_rmd_template <- function(base_file_name, params) {
+        params_code <- "list()"
+        if (!is.null(params) && length(params)) {
+          params_code <- capture.output(dput(params))
+        }
+        c(
+          "---",
+          "title: \"MVN Analysis Report\"",
+          "output:",
+          "  html_document:",
+          "    toc: true",
+          "    toc_depth: 2",
+          "---",
+          "",
+          "```{r setup, include=FALSE}",
+          "knitr::opts_chunk$set(echo = FALSE, message = FALSE)",
+          "library(MVN)",
+          "```",
+          "",
+          "## Workflow Summary",
+          "",
+          "This report template captures the configuration used in the MVN Shiny application.",
+          "",
+          "### Exported Files",
+          "",
+          paste0("- Prepared data: `", base_file_name, "_data.csv`"),
+          paste0("- Analysis object: `", base_file_name, "_analysis.rds`"),
+          paste0("- Analysis tables: `", base_file_name, "_analysis_tables.csv`"),
+          "",
+          "```{r load-data}",
+          paste0("prepared_data <- read.csv(\"", base_file_name, "_data.csv\")"),
+          paste0("analysis_object <- readRDS(\"", base_file_name, "_analysis.rds\")"),
+          "analysis_parameters <- ",
+          params_code,
+          "```",
+          "",
+          "## Inspect Parameters",
+          "",
+          "```{r display-parameters}",
+          "str(analysis_parameters)",
+          "```",
+          "",
+          "## Notes",
+          "",
+          "Summarise results, add plots, and include diagnostics in the sections below.",
+          ""
+        )
       }
 
       output$report_summary <- shiny::renderUI({
@@ -353,6 +495,22 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
             params <- list(message = "No analysis parameters are available.")
           }
           jsonlite::write_json(params, file, pretty = TRUE, auto_unbox = TRUE, null = "null")
+        }
+      )
+
+      output$parameter_log <- shiny::renderUI({
+        params <- collect_parameters()
+        build_parameter_table(params)
+      })
+
+      output$download_rmd_template <- shiny::downloadHandler(
+        filename = function() {
+          paste0(base_name(), "_analysis_template.Rmd")
+        },
+        content = function(file) {
+          params <- collect_parameters()
+          template <- build_rmd_template(base_name(), params)
+          writeLines(template, con = file)
         }
       )
     }

@@ -120,12 +120,15 @@ mod_data_prep_ui <- function(id) {
       bslib::card(
         bslib::card_header("Data summary"),
         shiny::verbatimTextOutput(ns("data_info")),
+        shiny::uiOutput(ns("sampling_warning")),
+        shiny::uiOutput(ns("validation_messages")),
         shiny::uiOutput(ns("excluded_ui")),
         shiny::tableOutput(ns("missing_overview"))
       ),
       bslib::card(
         bslib::card_header("Prepared data preview"),
         shiny::tableOutput(ns("data_preview")),
+        shiny::uiOutput(ns("preview_notice")),
         shiny::uiOutput(ns("lambda_header")),
         shiny::tableOutput(ns("lambda_table"))
       )
@@ -243,6 +246,17 @@ mod_data_prep_server <- function(id) {
         if (is.null(selected)) {
           selected <- character()
         }
+        invalid <- setdiff(selected, names(df)[numeric_cols])
+        if (length(invalid) > 0) {
+          shiny::showNotification(
+            sprintf(
+              "Non-numeric column%s excluded from the analysis: %s",
+              ifelse(length(invalid) == 1, "", "s"),
+              paste(invalid, collapse = ", ")
+            ),
+            type = "warning"
+          )
+        }
         selected <- intersect(selected, names(df)[numeric_cols])
         if (!any(numeric_cols)) {
           shiny::showNotification("No numeric columns detected in the selected data set.", type = "error")
@@ -356,6 +370,61 @@ mod_data_prep_server <- function(id) {
         }
       })
 
+      output$sampling_warning <- shiny::renderUI({
+        df <- raw_data()
+        if (is.null(df)) {
+          return(NULL)
+        }
+        df <- as.data.frame(df)
+        n <- nrow(df)
+        p <- ncol(df)
+        preview_limit <- 10L
+        large_row_threshold <- 5000L
+        large_col_threshold <- 100L
+        notices <- list()
+        if (is.numeric(n) && is.numeric(p) && (n > large_row_threshold || p > large_col_threshold)) {
+          notices[[length(notices) + 1]] <- shiny::div(
+            class = "alert alert-warning",
+            sprintf(
+              "Large dataset detected (%s rows, %s columns). Sampling and transformations may take additional time.",
+              format(n, big.mark = ",", trim = TRUE),
+              format(p, big.mark = ",", trim = TRUE)
+            )
+          )
+        }
+        if (is.numeric(n) && n > preview_limit) {
+          notices[[length(notices) + 1]] <- shiny::div(
+            class = "alert alert-info",
+            sprintf("Only the first %d rows are displayed in the preview.", preview_limit)
+          )
+        }
+        if (!length(notices)) {
+          return(NULL)
+        }
+        do.call(shiny::tagList, notices)
+      })
+
+      output$validation_messages <- shiny::renderUI({
+        df <- numeric_data()
+        shiny::req(df)
+        has_data <- is.data.frame(df) && ncol(df) > 0 && nrow(df) > 0
+        shiny::validate(shiny::need(has_data, "Select at least one numeric column with data."))
+        has_non_missing <- any(!vapply(df, function(col) all(is.na(col)), logical(1)))
+        shiny::validate(shiny::need(has_non_missing, "All selected numeric columns contain only missing values."))
+        if (identical(input$transform_family, "bcPower")) {
+          non_positive <- df <= 0
+          if (length(non_positive) && any(non_positive, na.rm = TRUE)) {
+            shiny::validate(
+              shiny::need(
+                FALSE,
+                "Box-Cox transformation requires strictly positive values. Choose a different transformation or adjust the data."
+              )
+            )
+          }
+        }
+        NULL
+      })
+
       output$excluded_ui <- shiny::renderUI({
         df <- raw_data()
         if (is.null(df)) {
@@ -391,6 +460,10 @@ mod_data_prep_server <- function(id) {
       output$missing_overview <- shiny::renderTable({
         df <- numeric_data()
         shiny::req(df)
+        shiny::validate(
+          shiny::need(ncol(df) > 0, "No numeric columns available for summary."),
+          shiny::need(nrow(df) > 0, "No data available to summarise.")
+        )
         data.frame(
           Variable = names(df),
           Missing = colSums(is.na(df)),
@@ -402,8 +475,27 @@ mod_data_prep_server <- function(id) {
       output$data_preview <- shiny::renderTable({
         df <- analysis_data()
         shiny::req(df)
+        shiny::validate(
+          shiny::need(nrow(df) > 0, "Prepared data is empty."),
+          shiny::need(ncol(df) > 0, "Prepared data does not contain any columns.")
+        )
         utils::head(df, n = 10)
       }, rownames = TRUE)
+
+      output$preview_notice <- shiny::renderUI({
+        df <- analysis_data()
+        if (is.null(df)) {
+          return(NULL)
+        }
+        df <- as.data.frame(df)
+        if (nrow(df) <= 10) {
+          return(NULL)
+        }
+        shiny::div(
+          class = "text-muted fst-italic mt-2",
+          "Preview truncated to the first 10 rows."
+        )
+      })
 
       output$lambda_header <- shiny::renderUI({
         lambda <- lambda_vals()

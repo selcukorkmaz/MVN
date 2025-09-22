@@ -28,7 +28,18 @@ if (!requireNamespace("yaml", quietly = TRUE)) {
   stop("The 'yaml' package is required to export analysis parameters as YAML.")
 }
 
+if (!requireNamespace("promises", quietly = TRUE)) {
+  stop("The 'promises' package is required for asynchronous processing in the Shiny application.")
+}
+
+if (!requireNamespace("future", quietly = TRUE)) {
+  stop("The 'future' package is required for background execution in the Shiny application.")
+}
+
 library(MVN)
+library(promises)
+
+future::plan(future::multisession)
 
 modules_dir <- file.path(getwd(), "modules")
 if (dir.exists(modules_dir)) {

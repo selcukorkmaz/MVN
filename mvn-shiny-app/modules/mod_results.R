@@ -64,6 +64,9 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
     function(input, output, session) {
       analysis_result <- shiny::reactiveVal(NULL)
       analysis_needs_run <- shiny::reactiveVal(TRUE)
+      analysis_in_progress <- shiny::reactiveVal(FALSE)
+
+      bootstrap_async_threshold <- 500L
 
       prepare_analysis_data <- function(df) {
         df <- as.data.frame(df)
@@ -95,12 +98,97 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
         )
       }
 
+      run_mvn_analysis <- function(prepared, opts) {
+        MVN::mvn(
+          data = prepared$data,
+          subset = prepared$group,
+          mvn_test = opts$mvn_test,
+          univariate_test = opts$univariate_test,
+          multivariate_outlier_method = opts$outlier_method,
+          descriptives = isTRUE(opts$descriptives),
+          bootstrap = isTRUE(opts$bootstrap),
+          alpha = opts$alpha,
+          B = opts$B,
+          cores = opts$cores,
+          show_new_data = TRUE,
+          tidy = TRUE
+        )
+      }
+
+      execute_analysis <- function(prepared, opts, asynchronous = FALSE) {
+        analysis_result(NULL)
+        analysis_in_progress(TRUE)
+        analysis_needs_run(FALSE)
+
+        run_call <- function() {
+          run_mvn_analysis(prepared, opts)
+        }
+
+        if (!isTRUE(asynchronous)) {
+          result <- NULL
+          tryCatch({
+            shiny::withProgress(message = "Running analysis...", {
+              result <<- run_call()
+            })
+          }, error = function(e) {
+            shiny::showNotification(paste("Analysis failed:", e$message), type = "error")
+            result <<- NULL
+          })
+          analysis_result(result)
+          analysis_in_progress(FALSE)
+          analysis_needs_run(is.null(result))
+          return(invisible(NULL))
+        }
+
+        detail_message <- sprintf(
+          "Running %d bootstrap replicate%s using %d core%s.",
+          opts$B,
+          ifelse(opts$B == 1, "", "s"),
+          opts$cores,
+          ifelse(opts$cores == 1, "", "s")
+        )
+
+        progress <- shiny::Progress$new(session = session)
+        progress$set(message = "Bootstrapping analysis...", detail = detail_message, value = 0)
+
+        promises::future_promise({
+          run_call()
+        }) %...>%
+          (function(result) {
+            progress$set(value = 1)
+            progress$close()
+            result
+          }) %...>%
+          (function(result) {
+            analysis_result(result)
+            analysis_in_progress(FALSE)
+            analysis_needs_run(is.null(result))
+            NULL
+          }) %...!%
+          (function(err) {
+            progress$close()
+            analysis_result(NULL)
+            analysis_in_progress(FALSE)
+            analysis_needs_run(TRUE)
+            shiny::showNotification(paste("Analysis failed:", conditionMessage(err)), type = "error")
+            NULL
+          })
+
+        shiny::showNotification(
+          "Bootstrap analysis started in the background. Results will appear when computation finishes.",
+          type = "message"
+        )
+
+        invisible(NULL)
+      }
+
       observeEvent(settings(), {
         opts <- settings()
         df <- data_for_analysis()
         if (is.null(df) || is.null(opts)) {
           analysis_result(NULL)
           analysis_needs_run(TRUE)
+          analysis_in_progress(FALSE)
           return()
         }
 
@@ -108,6 +196,7 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
         if (is.null(prepared)) {
           analysis_result(NULL)
           analysis_needs_run(TRUE)
+          analysis_in_progress(FALSE)
           return()
         }
 
@@ -120,28 +209,8 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
           )
         }
 
-        result <- tryCatch({
-          MVN::mvn(
-            data = prepared$data,
-            subset = prepared$group,
-            mvn_test = opts$mvn_test,
-            univariate_test = opts$univariate_test,
-            multivariate_outlier_method = opts$outlier_method,
-            descriptives = isTRUE(opts$descriptives),
-            bootstrap = isTRUE(opts$bootstrap),
-            alpha = opts$alpha,
-            B = opts$B,
-            cores = opts$cores,
-            show_new_data = TRUE,
-            tidy = TRUE
-          )
-        }, error = function(e) {
-          shiny::showNotification(paste("Analysis failed:", e$message), type = "error")
-          NULL
-        })
-
-        analysis_result(result)
-        analysis_needs_run(is.null(result))
+        asynchronous <- (isTRUE(opts$bootstrap) || identical(opts$mvn_test, "energy")) && opts$B >= bootstrap_async_threshold
+        execute_analysis(prepared, opts, asynchronous = asynchronous)
       }, ignoreNULL = FALSE)
 
       data_initialized <- shiny::reactiveVal(FALSE)
@@ -152,10 +221,12 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
         } else {
           analysis_result(NULL)
           analysis_needs_run(TRUE)
+          analysis_in_progress(FALSE)
         }
         if (is.null(df)) {
           analysis_result(NULL)
           analysis_needs_run(TRUE)
+          analysis_in_progress(FALSE)
         }
       }, ignoreNULL = FALSE)
 
@@ -167,6 +238,7 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
         }
         analysis_result(NULL)
         analysis_needs_run(TRUE)
+        analysis_in_progress(FALSE)
       }, ignoreNULL = FALSE)
 
       extract_p_value <- function(tbl) {
@@ -298,6 +370,12 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
       })
 
       output$results_message <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Analysis is running. This message will update when results are ready."
+          ))
+        }
         res <- analysis_result()
         if (is.null(res)) {
           if (isTRUE(analysis_needs_run())) {
