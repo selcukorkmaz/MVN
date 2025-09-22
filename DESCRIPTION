@@ -30,6 +30,10 @@ Imports:
     energy,
     plotly,
     mice
+Suggests:
+    DT,
+    jsonlite,
+    yaml
 Collate:
     'mvn.R'
     'mardia.R'
