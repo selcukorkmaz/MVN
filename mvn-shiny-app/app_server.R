@@ -10,6 +10,7 @@ app_server <- function(input, output, session) {
     "results",
     processed_data = data_prep$processed_data,
     settings = analysis_settings$settings,
+    run_analysis = analysis_settings$run_analysis,
     analysis_data = data_prep$analysis_data,
     subset = data_prep$subset
   )

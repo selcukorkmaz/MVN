@@ -48,8 +48,11 @@ mod_results_ui <- function(id) {
   )
 }
 
-mod_results_server <- function(id, processed_data, settings, analysis_data = NULL, subset = NULL) {
+mod_results_server <- function(id, processed_data, settings, run_analysis = NULL, analysis_data = NULL, subset = NULL) {
   stopifnot(is.function(processed_data), is.function(settings))
+  if (!is.null(run_analysis)) {
+    stopifnot(is.function(run_analysis))
+  }
   data_for_analysis <- if (is.null(analysis_data)) processed_data else analysis_data
   stopifnot(is.function(data_for_analysis))
   subset_var <- if (is.null(subset)) {
@@ -182,7 +185,9 @@ mod_results_server <- function(id, processed_data, settings, analysis_data = NUL
         invisible(NULL)
       }
 
-      observeEvent(settings(), {
+      analysis_trigger <- if (is.null(run_analysis)) settings else run_analysis
+
+      observeEvent(analysis_trigger(), {
         opts <- settings()
         df <- data_for_analysis()
         if (is.null(df) || is.null(opts)) {
