@@ -115,7 +115,7 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
 
       collect_settings <- function() {
         alpha_value <- suppressWarnings(as.numeric(input$alpha))
-        if (!is.finite(alpha_value) || alpha_value <= 0) {
+        if (length(alpha_value) != 1 || !is.finite(alpha_value) || alpha_value <= 0) {
           alpha_value <- 0.05
         }
         mvn_method <- input$mvn_test
@@ -130,13 +130,23 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
         if (is.null(outlier_method) || !(outlier_method %in% names(outlier_labels))) {
           outlier_method <- "quan"
         }
-        bootstrap_B <- suppressWarnings(as.integer(round(input$bootstrap_B)))
-        if (!is.finite(bootstrap_B) || bootstrap_B <= 0) {
+        bootstrap_input <- input$bootstrap_B
+        if (is.null(bootstrap_input) || length(bootstrap_input) != 1) {
           bootstrap_B <- 1000L
+        } else {
+          bootstrap_B <- suppressWarnings(as.integer(round(bootstrap_input)))
+          if (length(bootstrap_B) != 1 || !is.finite(bootstrap_B) || is.na(bootstrap_B) || bootstrap_B <= 0) {
+            bootstrap_B <- 1000L
+          }
         }
-        cores_value <- suppressWarnings(as.integer(round(input$bootstrap_cores)))
-        if (!is.finite(cores_value) || cores_value <= 0) {
+        cores_input <- input$bootstrap_cores
+        if (is.null(cores_input) || length(cores_input) != 1) {
           cores_value <- 1L
+        } else {
+          cores_value <- suppressWarnings(as.integer(round(cores_input)))
+          if (length(cores_value) != 1 || !is.finite(cores_value) || is.na(cores_value) || cores_value <= 0) {
+            cores_value <- 1L
+          }
         }
         max_cores <- tryCatch(
           suppressWarnings(parallel::detectCores(logical = FALSE)),
