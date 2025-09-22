@@ -209,7 +209,14 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         invisible(NULL)
       }
 
-      analysis_trigger <- if (is.null(run_analysis)) settings else run_analysis
+      analysis_trigger <- shiny::reactive({
+        current_settings <- settings()
+        if (is.null(run_analysis)) {
+          list(settings = current_settings)
+        } else {
+          list(settings = current_settings, trigger = run_analysis())
+        }
+      })
 
       observeEvent(analysis_trigger(), {
         opts <- settings()
