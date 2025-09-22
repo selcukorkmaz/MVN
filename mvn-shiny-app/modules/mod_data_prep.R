@@ -1,12 +1,13 @@
 mod_data_prep_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  shiny::tagList(
-    shiny::sidebarLayout(
-      shiny::sidebarPanel(
+  bslib::layout_sidebar(
+    sidebar = shiny::tagList(
+      bslib::card(
+        bslib::card_header("Data source"),
         shiny::radioButtons(
           ns("data_source"),
-          label = "Data source",
+          label = NULL,
           choices = c("Sample dataset" = "sample", "Upload file" = "upload"),
           selected = "sample"
         ),
@@ -38,11 +39,13 @@ mod_data_prep_ui <- function(id) {
             choices = c("," = ",", ";" = ";", "Tab" = "\t"),
             selected = ","
           )
-        ),
-        shiny::hr(),
+        )
+      ),
+      bslib::card(
+        bslib::card_header("Missing data"),
         shiny::selectInput(
           ns("impute_method"),
-          label = "Missing data handling",
+          label = "Handling method",
           choices = c("None" = "none", "Mean" = "mean", "Median" = "median", "MICE" = "mice"),
           selected = "none"
         ),
@@ -50,8 +53,10 @@ mod_data_prep_ui <- function(id) {
           condition = sprintf("input['%s'] == 'mice'", ns("impute_method")),
           shiny::numericInput(ns("mice_m"), label = "Number of imputations (m)", value = 5, min = 1, step = 1),
           shiny::numericInput(ns("mice_seed"), label = "Random seed", value = 123, min = 1, step = 1)
-        ),
-        shiny::hr(),
+        )
+      ),
+      bslib::card(
+        bslib::card_header("Transformations"),
         shiny::selectInput(
           ns("transform_family"),
           label = "Power transformation",
@@ -72,19 +77,27 @@ mod_data_prep_ui <- function(id) {
             inline = TRUE,
             selected = "optimal"
           )
-        ),
+        )
+      ),
+      bslib::card(
+        bslib::card_header("Standardization"),
         shiny::checkboxInput(
           ns("standardize"),
           label = "Center and scale numeric columns",
           value = FALSE
         )
-      ),
-      shiny::mainPanel(
-        shiny::h4("Data summary"),
+      )
+    ),
+    bslib::layout_column_wrap(
+      width = 1/2,
+      bslib::card(
+        bslib::card_header("Data summary"),
         shiny::verbatimTextOutput(ns("data_info")),
         shiny::uiOutput(ns("excluded_ui")),
-        shiny::tableOutput(ns("missing_overview")),
-        shiny::h4("Preview of prepared data"),
+        shiny::tableOutput(ns("missing_overview"))
+      ),
+      bslib::card(
+        bslib::card_header("Prepared data preview"),
         shiny::tableOutput(ns("data_preview")),
         shiny::uiOutput(ns("lambda_header")),
         shiny::tableOutput(ns("lambda_table"))
