@@ -16,8 +16,8 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("The 'ggplot2' package is required to run this application.")
 }
 
-if (!requireNamespace("DT", quietly = TRUE)) {
-  stop("The 'DT' package is required to display interactive result tables.")
+if (!requireNamespace("plotly", quietly = TRUE)) {
+  stop("The 'plotly' package is required to render interactive visualisations.")
 }
 
 if (!requireNamespace("jsonlite", quietly = TRUE)) {

@@ -1,78 +1,211 @@
 mod_results_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  summary_cards <- shiny::div(
-    class = "summary-cards d-flex flex-wrap gap-3",
-    shiny::div(
-      class = "summary-card",
-      bslib::value_box(
-        title = "Observations",
-        value = shiny::textOutput(ns("summary_n"), inline = TRUE),
-        showcase = shiny::tags$span("👥", class = "display-6", `aria-hidden` = "true")
-      )
-    ),
-    shiny::div(
-      class = "summary-card",
-      bslib::value_box(
-        title = "Variables",
-        value = shiny::textOutput(ns("summary_p"), inline = TRUE),
-        showcase = shiny::tags$span("🔢", class = "display-6", `aria-hidden` = "true")
-      )
-    ),
-    shiny::div(
-      class = "summary-card",
-      bslib::value_box(
-        title = "MVN test & p-value",
-        value = shiny::uiOutput(ns("summary_test_details")),
-        showcase = shiny::tags$span("📊", class = "display-6", `aria-hidden` = "true")
-      )
-    ),
-    shiny::div(
-      class = "summary-card",
-      bslib::value_box(
-        title = "Normality decision",
-        value = shiny::uiOutput(ns("summary_decision"))
+  summary_metric <- function(label, value_ui, icon = NULL) {
+    shiny::tags$div(
+      class = "summary-item d-flex align-items-center gap-3",
+      if (!is.null(icon)) {
+        shiny::tags$span(icon, class = "summary-icon", `aria-hidden` = "true")
+      },
+      shiny::tags$div(
+        class = "summary-metric-text",
+        shiny::tags$div(
+          class = "summary-label text-uppercase text-muted fw-semibold",
+          label
+        ),
+        shiny::tags$div(class = "summary-value", value_ui)
       )
     )
+  }
+
+  css_rules <- paste(
+    ".results-summary {",
+    "  display: flex;",
+    "  flex-wrap: wrap;",
+    "  gap: 1rem;",
+    "  margin-bottom: 0.75rem;",
+    "}",
+    ".results-summary .summary-item {",
+    "  flex: 1 1 200px;",
+    "  background: rgba(248, 249, 250, 0.85);",
+    "  border: 1px solid rgba(0, 0, 0, 0.05);",
+    "  border-radius: 0.85rem;",
+    "  padding: 0.75rem 1rem;",
+    "  min-height: 72px;",
+    "}",
+    ".summary-item .summary-icon {",
+    "  font-size: 1.5rem;",
+    "}",
+    ".summary-metric-text .summary-label {",
+    "  font-size: 0.7rem;",
+    "  letter-spacing: 0.08em;",
+    "}",
+    ".summary-metric-text .summary-value {",
+    "  font-size: 1.25rem;",
+    "  font-weight: 600;",
+    "  color: var(--bs-body-color, #212529);",
+    "}",
+    ".summary-context {",
+    "  margin-bottom: 1.25rem;",
+    "}",
+    ".results-card-grid {",
+    "  gap: 1.5rem;",
+    "  margin-bottom: 1.5rem;",
+    "}",
+    ".results-card {",
+    "  min-height: 100%;",
+    "}",
+    ".results-card .card-header {",
+    "  font-weight: 600;",
+    "  letter-spacing: 0.06em;",
+    "  text-transform: uppercase;",
+    "  display: flex;",
+    "  align-items: center;",
+    "  gap: 0.5rem;",
+    "}",
+    ".results-card .card-title-icon {",
+    "  font-size: 1.25rem;",
+    "}",
+    ".results-card details {",
+    "  border-top: 1px solid rgba(0, 0, 0, 0.05);",
+    "  margin-top: 1rem;",
+    "  padding-top: 0.75rem;",
+    "}",
+    ".results-card details > summary {",
+    "  cursor: pointer;",
+    "  font-weight: 600;",
+    "  color: var(--bs-primary, #0d6efd);",
+    "}",
+    ".results-table {",
+    "  width: 100%;",
+    "  border-collapse: collapse;",
+    "  font-size: 0.95rem;",
+    "}",
+    ".results-table th,",
+    ".results-table td {",
+    "  padding: 0.5rem 0.75rem;",
+    "  border-bottom: 1px solid rgba(0, 0, 0, 0.05);",
+    "  vertical-align: middle;",
+    "}",
+    ".results-table th {",
+    "  text-transform: uppercase;",
+    "  font-size: 0.7rem;",
+    "  letter-spacing: 0.08em;",
+    "  color: var(--bs-secondary-color, #6c757d);",
+    "}",
+    ".results-table tbody tr:nth-child(odd) {",
+    "  background-color: rgba(240, 242, 245, 0.65);",
+    "}",
+    ".results-table tbody tr:hover {",
+    "  background-color: rgba(13, 110, 253, 0.08);",
+    "}",
+    ".p-value-low {",
+    "  color: var(--bs-danger, #dc3545);",
+    "  font-weight: 600;",
+    "}",
+    ".p-value-ok {",
+    "  font-weight: 600;",
+    "}",
+    ".badge-decision {",
+    "  display: inline-flex;",
+    "  align-items: center;",
+    "  gap: 0.35rem;",
+    "  padding: 0.35rem 0.75rem;",
+    "  border-radius: 999px;",
+    "  font-weight: 600;",
+    "}",
+    ".badge-decision.bg-warning {",
+    "  color: #343a40;",
+    "}",
+    ".visual-block {",
+    "  margin-bottom: 1.25rem;",
+    "}",
+    ".spread-bar {",
+    "  position: relative;",
+    "  height: 0.55rem;",
+    "  border-radius: 999px;",
+    "  background-color: rgba(33, 37, 41, 0.08);",
+    "  overflow: hidden;",
+    "}",
+    ".spread-bar-range {",
+    "  position: absolute;",
+    "  top: 0;",
+    "  bottom: 0;",
+    "  border-radius: inherit;",
+    "  background: linear-gradient(90deg, rgba(13, 110, 253, 0.75), rgba(25, 135, 84, 0.75));",
+    "}",
+    ".spread-bar-mean {",
+    "  position: absolute;",
+    "  top: -25%;",
+    "  bottom: -25%;",
+    "  width: 2px;",
+    "  background-color: #0d1b2a;",
+    "}",
+    "@media (max-width: 576px) {",
+    "  .results-summary .summary-item {",
+    "    flex: 1 1 100%;",
+    "  }",
+    "}",
+    sep = "\n"
   )
 
   shiny::tagList(
-    shiny::tags$style(
-      shiny::HTML(
-        ".summary-cards {\n          display: flex;\n          flex-wrap: wrap;\n          gap: 1rem;\n        }\n        .summary-cards .summary-card {\n          flex: 1 1 240px;\n          display: flex;\n        }\n        .summary-cards .summary-card > * {\n          flex: 1 1 auto;\n        }\n        @media (max-width: 992px) {\n          .summary-cards .summary-card {\n            flex: 1 1 calc(50% - 1rem);\n          }\n        }\n        @media (max-width: 576px) {\n          .summary-cards .summary-card {\n            flex: 1 1 100%;\n          }\n        }"
+    shiny::tags$style(shiny::HTML(css_rules)),
+    shiny::div(
+      class = "results-summary",
+      summary_metric("Observations", shiny::textOutput(ns("summary_n"), inline = TRUE), icon = "👥"),
+      summary_metric("Variables", shiny::textOutput(ns("summary_p"), inline = TRUE), icon = "🔢"),
+      summary_metric("MVN p-value", shiny::uiOutput(ns("summary_pvalue")), icon = "📈"),
+      summary_metric("Decision", shiny::uiOutput(ns("summary_decision")))
+    ),
+    shiny::div(
+      class = "summary-context text-muted small",
+      shiny::uiOutput(ns("summary_context"))
+    ),
+    shiny::uiOutput(ns("analysis_status")),
+    bslib::layout_column_wrap(
+      width = 1/2,
+      class = "results-card-grid",
+      bslib::card(
+        class = "results-card",
+        bslib::card_header(
+          shiny::tags$span("🌐", class = "card-title-icon", `aria-hidden` = "true"),
+          "Multivariate normality"
+        ),
+        shiny::uiOutput(ns("multivariate_content"))
+      ),
+      bslib::card(
+        class = "results-card",
+        bslib::card_header(
+          shiny::tags$span("📊", class = "card-title-icon", `aria-hidden` = "true"),
+          "Univariate normality"
+        ),
+        shiny::uiOutput(ns("univariate_content"))
+      ),
+      bslib::card(
+        class = "results-card",
+        bslib::card_header(
+          shiny::tags$span("🧮", class = "card-title-icon", `aria-hidden` = "true"),
+          "Descriptive statistics"
+        ),
+        shiny::uiOutput(ns("descriptives_content"))
+      ),
+      bslib::card(
+        class = "results-card",
+        bslib::card_header(
+          shiny::tags$span("🚨", class = "card-title-icon", `aria-hidden` = "true"),
+          "Outlier diagnostics"
+        ),
+        shiny::uiOutput(ns("outlier_content"))
       )
     ),
-    bslib::layout_column_wrap(
-      width = 1,
-      summary_cards,
-      bslib::card(
-        bslib::card_header("Multivariate normality"),
-        shiny::uiOutput(ns("results_message"))
-      ),
-      bslib::card(
-        bslib::card_header("Multivariate normality test"),
-        shiny::uiOutput(ns("multivariate_section"))
-      ),
-      bslib::card(
-        bslib::card_header("Univariate normality tests"),
-        shiny::uiOutput(ns("univariate_section"))
-      ),
-      bslib::card(
-        bslib::card_header("Descriptive statistics"),
-        shiny::uiOutput(ns("descriptives_section"))
-      ),
-      bslib::card(
-        bslib::card_header("Outlier diagnostics"),
-        shiny::uiOutput(ns("outliers_section"))
-      ),
-      bslib::accordion(
-        id = ns("results_details"),
-        open = character(0),
-        bslib::accordion_panel(
-          title = "Analysis details",
-          value = "analysis-details",
-          shiny::verbatimTextOutput(ns("analysis_summary"))
-        )
+    bslib::accordion(
+      id = ns("results_details"),
+      open = character(0),
+      bslib::accordion_panel(
+        title = "Analysis details",
+        value = "analysis-details",
+        shiny::verbatimTextOutput(ns("analysis_summary"))
       )
     )
   )
@@ -224,7 +357,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         }
       })
 
-      observeEvent(analysis_trigger(), {
+      shiny::observeEvent(analysis_trigger(), {
         opts <- settings()
         df <- data_for_analysis()
         if (is.null(df) || is.null(opts)) {
@@ -283,41 +416,230 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         analysis_in_progress(FALSE)
       }, ignoreNULL = FALSE)
 
-      extract_p_value <- function(tbl) {
-        if (is.null(tbl)) {
-          return(list(display = "\u2014", numeric = NA_real_))
+      parse_p_value <- function(x) {
+        if (is.null(x) || length(x) == 0) {
+          return(NA_real_)
         }
-        df <- as.data.frame(tbl)
-        if (!nrow(df)) {
-          return(list(display = "\u2014", numeric = NA_real_))
+        if (is.numeric(x)) {
+          return(x[1])
         }
-        p_col <- intersect(c("p.value", "p_value", "pvalue", "p.value.skew"), names(df))
-        if (!length(p_col)) {
-          return(list(display = "\u2014", numeric = NA_real_))
+        value <- trimws(as.character(x[1]))
+        if (!nzchar(value)) {
+          return(NA_real_)
         }
-        raw_value <- df[[p_col[1]]][1]
-        if (length(raw_value) == 0) {
-          return(list(display = "\u2014", numeric = NA_real_))
-        }
-        display <- if (is.numeric(raw_value)) {
-          formatC(raw_value, digits = 3, format = "g")
-        } else {
-          as.character(raw_value)
-        }
-        numeric_value <- suppressWarnings(as.numeric(raw_value))
-        if (!is.finite(numeric_value) && is.character(raw_value)) {
-          if (grepl("^\\s*<", raw_value)) {
-            numeric_value <- suppressWarnings(as.numeric(sub("^\\s*<\\s*", "", raw_value)))
-          } else if (grepl("^\\s*>", raw_value)) {
-            numeric_value <- suppressWarnings(as.numeric(sub("^\\s*>\\s*", "", raw_value)))
+        numeric_value <- suppressWarnings(as.numeric(value))
+        if (is.na(numeric_value)) {
+          if (grepl("^<\\s*", value)) {
+            numeric_value <- suppressWarnings(as.numeric(sub("^<\\s*", "", value)))
+          } else if (grepl("^>\\s*", value)) {
+            numeric_value <- suppressWarnings(as.numeric(sub("^>\\s*", "", value)))
           }
         }
-        list(
-          display = if (is.null(display) || !nzchar(display)) "\u2014" else display,
-          numeric = numeric_value
+        numeric_value
+      }
+
+      format_number <- function(x, digits = 3, format = "g") {
+        if (is.null(x) || length(x) == 0 || all(is.na(x))) {
+          return("\u2014")
+        }
+        value <- x[1]
+        if (is.numeric(value)) {
+          return(formatC(value, digits = digits, format = format))
+        }
+        as.character(value)
+      }
+
+      format_integer <- function(x) {
+        if (is.null(x) || length(x) == 0 || all(is.na(x))) {
+          return("\u2014")
+        }
+        value <- suppressWarnings(as.integer(x[1]))
+        if (is.na(value)) {
+          return(format_number(x))
+        }
+        format(value, big.mark = ",", trim = TRUE)
+      }
+
+      classify_decision <- function(p, alpha) {
+        if (is.null(p) || !is.finite(p)) {
+          return(list(status = "unknown", class = "badge-decision bg-secondary text-white", icon = "\u2139\ufe0f", label = "Review details"))
+        }
+        tolerance <- max(0.005, alpha * 0.1)
+        if (abs(p - alpha) <= tolerance) {
+          return(list(status = "borderline", class = "badge-decision bg-warning text-dark", icon = "\u26a0\ufe0f", label = "Borderline"))
+        }
+        if (p < alpha) {
+          return(list(status = "not_normal", class = "badge-decision bg-danger text-white", icon = "\u274c", label = "Non-normal"))
+        }
+        list(status = "normal", class = "badge-decision bg-success text-white", icon = "\u2705", label = "Normal")
+      }
+
+      build_spread_bar <- function(min_val, max_val, mean_val, sd_val) {
+        values <- c(min_val, max_val, mean_val, sd_val)
+        if (!all(is.finite(values[1:2])) || max_val <= min_val) {
+          return(shiny::tags$div(class = "spread-bar"))
+        }
+        lower <- if (is.finite(sd_val)) mean_val - sd_val else mean_val
+        upper <- if (is.finite(sd_val)) mean_val + sd_val else mean_val
+        start <- max(min(lower, max_val), min_val)
+        end <- min(max(upper, min_val), max_val)
+        range_span <- max_val - min_val
+        start_pct <- max(min((start - min_val) / range_span, 1), 0)
+        end_pct <- max(min((end - min_val) / range_span, 1), start_pct)
+        mean_pct <- max(min((mean_val - min_val) / range_span, 1), 0)
+        width_pct <- max((end_pct - start_pct) * 100, 4)
+        shiny::tags$div(
+          class = "spread-bar",
+          shiny::tags$div(
+            class = "spread-bar-range",
+            style = sprintf("left: %.2f%%; width: %.2f%%;", start_pct * 100, width_pct)
+          ),
+          shiny::tags$div(
+            class = "spread-bar-mean",
+            style = sprintf("left: %.2f%%;", mean_pct * 100)
+          )
         )
       }
 
+      format_table_cell <- function(value, column, alpha, highlight_p, badge_columns) {
+        if (inherits(value, "shiny.tag")) {
+          return(value)
+        }
+        if (is.null(value) || (length(value) == 1 && (is.na(value) || !nzchar(as.character(value))))) {
+          return(shiny::HTML("&mdash;"))
+        }
+        if (column %in% badge_columns) {
+          text <- as.character(value)
+          lower_text <- tolower(text)
+          class <- if (grepl("not", lower_text, fixed = TRUE)) {
+            "badge text-bg-danger"
+          } else if (grepl("normal", lower_text, fixed = TRUE)) {
+            "badge text-bg-success"
+          } else if (grepl("true", lower_text, fixed = TRUE)) {
+            "badge text-bg-danger"
+          } else {
+            "badge text-bg-secondary"
+          }
+          return(shiny::tags$span(class = class, text))
+        }
+        if (highlight_p && grepl("p", column, ignore.case = TRUE)) {
+          display <- format_number(value)
+          numeric_value <- parse_p_value(value)
+          cls <- if (!is.na(numeric_value) && numeric_value < alpha) "p-value-low" else "p-value-ok"
+          return(shiny::tags$span(class = cls, display))
+        }
+        format_number(value)
+      }
+
+      build_results_table <- function(data, alpha, highlight_p = TRUE, caption = NULL, badge_columns = c("MVN", "Normality", "Outlier")) {
+        df <- as.data.frame(data, stringsAsFactors = FALSE)
+        if (!nrow(df)) {
+          return(shiny::div(class = "alert alert-secondary", "No results available."))
+        }
+        columns <- names(df)
+        header <- shiny::tags$tr(lapply(columns, shiny::tags$th))
+        body <- lapply(seq_len(nrow(df)), function(i) {
+          shiny::tags$tr(lapply(columns, function(col) {
+            shiny::tags$td(format_table_cell(df[[col]][i], col, alpha, highlight_p, badge_columns))
+          }))
+        })
+        table <- shiny::tags$table(
+          class = "results-table table table-sm",
+          shiny::tags$thead(header),
+          shiny::tags$tbody(body)
+        )
+        if (!is.null(caption)) {
+          return(shiny::tagList(shiny::tags$p(class = "text-muted small mb-2", caption), table))
+        }
+        table
+      }
+
+      render_descriptive_table <- function(desc_df) {
+        df <- as.data.frame(desc_df, stringsAsFactors = FALSE)
+        if (!nrow(df)) {
+          return(shiny::div(class = "alert alert-secondary", "No descriptive statistics available."))
+        }
+        has_group <- "Group" %in% names(df)
+        rows <- lapply(seq_len(nrow(df)), function(i) {
+          group_val <- if (has_group) df$Group[i] else NULL
+          cells <- list()
+          if (has_group) {
+            cells <- append(cells, list(shiny::tags$td(htmltools::htmlEscape(as.character(group_val)))))
+          }
+          mean_val <- suppressWarnings(as.numeric(df$Mean[i]))
+          sd_val <- suppressWarnings(as.numeric(df$Std.Dev[i]))
+          min_val <- suppressWarnings(as.numeric(df$Min[i]))
+          max_val <- suppressWarnings(as.numeric(df$Max[i]))
+          cells <- append(
+            cells,
+            list(
+              shiny::tags$td(htmltools::htmlEscape(as.character(df$Variable[i]))),
+              shiny::tags$td(format_integer(df$n[i])),
+              shiny::tags$td(shiny::tags$span(class = "fw-semibold", sprintf("%s ± %s", format_number(mean_val), format_number(sd_val)))),
+              shiny::tags$td(format_number(df$Median[i])),
+              shiny::tags$td(format_number(min_val)),
+              shiny::tags$td(format_number(max_val)),
+              shiny::tags$td(build_spread_bar(min_val, max_val, mean_val, sd_val)),
+              shiny::tags$td(format_number(df$Skew[i])),
+              shiny::tags$td(format_number(df$Kurtosis[i]))
+            )
+          )
+          shiny::tags$tr(cells)
+        })
+        header_labels <- c(if (has_group) "Group", "Variable", "n", "Mean ± SD", "Median", "Min", "Max", "Spread", "Skew", "Kurtosis")
+        header <- shiny::tags$tr(lapply(header_labels, shiny::tags$th))
+        shiny::tags$table(
+          class = "results-table table table-sm",
+          shiny::tags$thead(header),
+          shiny::tags$tbody(rows)
+        )
+      }
+
+      get_numeric_data <- function(res) {
+        if (is.null(res)) {
+          return(NULL)
+        }
+        data <- res$data
+        if (is.null(data)) {
+          return(NULL)
+        }
+        df <- as.data.frame(data)
+        group <- res$subset
+        if (!is.null(group) && nzchar(group) && group %in% names(df)) {
+          df[[group]] <- NULL
+        }
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        if (!length(numeric_cols)) {
+          return(NULL)
+        }
+        df[, numeric_cols, drop = FALSE]
+      }
+
+      get_group_values <- function(res) {
+        group <- res$subset
+        if (is.null(group) || !nzchar(group)) {
+          return(NULL)
+        }
+        data <- res$data
+        if (is.null(data)) {
+          return(NULL)
+        }
+        df <- as.data.frame(data)
+        if (!(group %in% names(df))) {
+          return(NULL)
+        }
+        df[[group]]
+      }
+
+      compute_plot_height <- function(num_vars, base = 260, per_row = 140) {
+        if (is.null(num_vars) || !is.finite(num_vars) || num_vars <= 0) {
+          return(paste0(base, "px"))
+        }
+        cols <- ceiling(sqrt(num_vars))
+        rows <- ceiling(num_vars / cols)
+        height <- base + (rows - 1) * per_row
+        paste0(min(height, 900), "px")
+      }
       summary_info <- shiny::reactive({
         res <- analysis_result()
         opts <- settings()
@@ -328,31 +650,47 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (is.null(data)) {
           return(NULL)
         }
-        data <- as.data.frame(data)
+        df <- as.data.frame(data)
         group <- res$subset
-        if (is.null(group) || !nzchar(group) || !(group %in% names(data))) {
+        group_levels <- NULL
+        if (!is.null(group) && nzchar(group) && group %in% names(df)) {
+          group_levels <- length(unique(stats::na.omit(df[[group]])))
+        } else {
           group <- NULL
         }
-        numeric_cols <- names(data)[vapply(data, is.numeric, logical(1))]
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
         if (!is.null(group)) {
           numeric_cols <- setdiff(numeric_cols, group)
         }
-        p_info <- extract_p_value(res$multivariate_normality)
+        multivariate_tbl <- res$multivariate_normality
+        p_display <- "\u2014"
+        p_value <- NA_real_
+        if (!is.null(multivariate_tbl)) {
+          df_p <- as.data.frame(multivariate_tbl)
+          if (nrow(df_p)) {
+            p_col <- intersect(c("p.value", "p_value", "p.value.skew"), names(df_p))
+            if (length(p_col)) {
+              raw <- df_p[[p_col[1]]][1]
+              p_display <- format_number(raw)
+              p_value <- parse_p_value(raw)
+            }
+          }
+        }
         outlier_tbl <- res$multivariate_outliers
         outlier_count <- if (is.null(outlier_tbl)) 0L else nrow(as.data.frame(outlier_tbl))
-        test_name <- opts$test_label
-        if (is.null(test_name) || is.na(test_name)) {
-          test_name <- opts$mvn_test
+        test_label <- opts$test_label
+        if (is.null(test_label) || is.na(test_label)) {
+          test_label <- opts$mvn_test
         }
         list(
-          n = nrow(data),
+          n = nrow(df),
           p = length(numeric_cols),
-          group = group,
-          group_levels = if (!is.null(group)) length(unique(data[[group]][!is.na(data[[group]])])) else NULL,
-          test_label = test_name,
           alpha = opts$alpha,
-          p_display = p_info$display,
-          p_value = p_info$numeric,
+          p_value = p_value,
+          p_display = p_display,
+          test_label = test_label,
+          group = group,
+          group_levels = group_levels,
           outlier_label = opts$outlier_label,
           outlier_count = outlier_count,
           cleaned_available = !is.null(res$new_data)
@@ -375,356 +713,405 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         format(info$p, big.mark = ",", trim = TRUE)
       })
 
-      output$summary_test_details <- shiny::renderUI({
+      output$summary_pvalue <- shiny::renderUI({
         info <- summary_info()
         if (is.null(info)) {
-          return(shiny::div(class = "text-muted", "\u2014"))
+          return(shiny::tags$span(class = "text-muted", "\u2014"))
         }
-        shiny::tagList(
-          shiny::tags$div(class = "fw-semibold", info$test_label),
-          shiny::tags$small(
-            class = "text-muted",
-            sprintf("\u03b1 = %s \u2022 p = %s", format(info$alpha, digits = 3, trim = TRUE), info$p_display)
-          )
-        )
+        cls <- if (!is.null(info$p_value) && is.finite(info$p_value) && info$p_value < info$alpha) "p-value-low" else "p-value-ok"
+        shiny::tags$span(class = cls, info$p_display)
       })
 
       output$summary_decision <- shiny::renderUI({
         info <- summary_info()
         if (is.null(info)) {
-          return(shiny::tags$span(
-            class = "badge bg-secondary d-inline-flex align-items-center gap-2",
-            shiny::tags$span("⏳", `aria-hidden` = "true"),
-            shiny::tags$span("Awaiting analysis")
-          ))
+          return(shiny::tags$span(class = "badge-decision bg-secondary text-white", "Awaiting analysis"))
         }
-        if (!is.null(info$p_value) && is.finite(info$p_value)) {
-          if (info$p_value < info$alpha) {
-            badge_class <- "badge bg-danger"
-            badge_icon <- "❌"
-            badge_text <- "Not normal"
-          } else {
-            badge_class <- "badge bg-success"
-            badge_icon <- "✅"
-            badge_text <- "Normal"
-          }
-        } else {
-          badge_class <- "badge bg-info text-dark"
-          badge_icon <- "ℹ️"
-          badge_text <- "Review details"
+        decision <- classify_decision(info$p_value, info$alpha)
+        label <- decision$label
+        if (identical(decision$status, "borderline") && is.finite(info$p_value)) {
+          direction <- if (info$p_value < info$alpha) "below" else "above"
+          label <- sprintf("Borderline (%s \u03b1)", direction)
         }
         shiny::tags$span(
-          class = paste(badge_class, "d-inline-flex align-items-center gap-2"),
-          shiny::tags$span(badge_icon, `aria-hidden` = "true"),
-          shiny::tags$span(badge_text)
+          class = decision$class,
+          shiny::tags$span(decision$icon, `aria-hidden` = "true"),
+          shiny::tags$span(label)
         )
       })
 
-      output$results_message <- shiny::renderUI({
+      output$summary_context <- shiny::renderUI({
+        info <- summary_info()
+        if (is.null(info)) {
+          return(shiny::tags$span("Results will display after running the analysis."))
+        }
+        parts <- c(sprintf("%s test", info$test_label), sprintf("\u03b1 = %s", format(info$alpha, digits = 3)))
+        if (!is.null(info$group)) {
+          group_text <- if (!is.null(info$group_levels)) {
+            sprintf("Grouping: %s (%d levels)", info$group, info$group_levels)
+          } else {
+            sprintf("Grouping: %s", info$group)
+          }
+          parts <- c(parts, group_text)
+        }
+        shiny::tags$span(htmltools::htmlEscape(paste(parts, collapse = " \u00b7 ")))
+      })
+
+      output$analysis_status <- shiny::renderUI({
         if (isTRUE(analysis_in_progress())) {
           return(shiny::div(
-            class = "alert alert-info",
-            "Analysis is running. This message will update when results are ready."
+            class = "alert alert-info d-flex align-items-center gap-2",
+            shiny::tags$span("\u23f3", `aria-hidden` = "true"),
+            shiny::tags$span("Analysis in progress. Results will refresh automatically when complete.")
           ))
         }
         res <- analysis_result()
         if (is.null(res)) {
           if (isTRUE(analysis_needs_run())) {
             return(shiny::div(
-              class = "alert alert-info",
-              "Click Run analysis to compute results with the current configuration."
+              class = "alert alert-primary d-flex align-items-center gap-2",
+              shiny::tags$span("\ud83e\uddea", `aria-hidden` = "true"),
+              shiny::tags$span("Click Run analysis in the Analysis Settings tab to generate results.")
             ))
           }
-          return(shiny::div(class = "text-muted", "Run the analysis to view results."))
-        }
-
-        info <- summary_info()
-        if (is.null(info)) {
-          return(shiny::div(class = "alert alert-info", "Run the analysis to view results."))
-        }
-
-        base_text <- sprintf(
-          "Analyzed %s observations across %s variables using the %s test.",
-          format(info$n, big.mark = ",", trim = TRUE),
-          format(info$p, big.mark = ",", trim = TRUE),
-          info$test_label
-        )
-
-        details <- character(0)
-        if (!is.null(info$group)) {
-          details <- c(
-            details,
-            sprintf(
-              "Grouping variable: %s (%d levels).",
-              info$group,
-              info$group_levels
-            )
-          )
-        }
-        if (!is.null(info$outlier_label)) {
-          outlier_sentence <- if (info$outlier_count > 0) {
-            sprintf(
-              "%d multivariate outlier%s flagged.",
-              info$outlier_count,
-              ifelse(info$outlier_count == 1, "", "s")
-            )
-          } else {
-            "No multivariate outliers were flagged."
-          }
-          details <- c(
-            details,
-            sprintf("Outlier method: %s. %s", info$outlier_label, outlier_sentence)
-          )
-        }
-        if (isTRUE(info$cleaned_available)) {
-          details <- c(
-            details,
-            "A cleaned dataset excluding flagged outliers is available in the Outlier diagnostics section below."
-          )
-        }
-
-        if (!is.null(info$p_value) && is.finite(info$p_value)) {
-          details <- c(details, sprintf("Reported p-value: %s.", info$p_display))
-          alert_class <- if (info$p_value < info$alpha) {
-            "alert alert-warning"
-          } else {
-            "alert alert-success"
-          }
-        } else {
-          details <- c(details, "Reported p-value is unavailable. Review the tables below for additional details.")
-          alert_class <- "alert alert-info"
-        }
-
-        detail_tags <- lapply(details, shiny::tags$p)
-        shiny::div(
-          class = alert_class,
-          shiny::tags$p(base_text),
-          detail_tags
-        )
-      })
-
-      render_results_table <- function(data) {
-        DT::datatable(
-          data,
-          options = list(
-            pageLength = 10,
-            scrollX = TRUE,
-            lengthMenu = c(5, 10, 25, 50, 100)
-          ),
-          rownames = FALSE,
-          filter = "top",
-          class = "display nowrap"
-        )
-      }
-
-      output$multivariate_section <- shiny::renderUI({
-        if (isTRUE(analysis_in_progress())) {
           return(shiny::div(
-            class = "alert alert-info",
-            "Analysis is running. Multivariate test results will appear here when computation finishes."
+            class = "alert alert-warning",
+            "Results are unavailable for the current configuration. Re-run the analysis to refresh the output."
           ))
         }
-
+        NULL
+      })
+      output$multivariate_content <- shiny::renderUI({
         res <- analysis_result()
         if (is.null(res)) {
           message <- if (isTRUE(analysis_needs_run())) {
-            "Click Run analysis in the Analysis Settings tab to compute the multivariate normality results."
+            "Run the analysis to view multivariate normality diagnostics."
           } else {
             "Multivariate normality results are unavailable. Re-run the analysis to generate them."
           }
-          return(shiny::div(class = "alert alert-info", message))
+          return(shiny::div(class = "alert alert-secondary", message))
         }
-
-        tbl <- res$multivariate_normality
-        if (is.null(tbl)) {
-          return(shiny::div(
-            class = "alert alert-warning",
-            "The selected analysis did not return multivariate normality results."
-          ))
+        numeric_data <- get_numeric_data(res)
+        if (is.null(numeric_data) || ncol(numeric_data) < 2) {
+          return(shiny::div(class = "alert alert-warning", "At least two numeric variables are required to display multivariate diagnostics."))
         }
-
-        DT::dataTableOutput(ns("multivariate_table"))
+        info <- summary_info()
+        shiny::tagList(
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Scatter overview"),
+            plotly::plotlyOutput(ns("multivariate_scatter"), height = "340px")
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis Q-Q plot"),
+            ggplot2::plotOutput(ns("multivariate_qq"), height = "320px")
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
+            shiny::uiOutput(ns("multivariate_table"))
+          ),
+          shiny::tags$details(
+            shiny::tags$summary("Interpretation notes"),
+            shiny::tags$p(sprintf(
+              "%s at \u03b1 = %s. P-values below the threshold indicate departures from multivariate normality.",
+              info$test_label,
+              format(info$alpha, digits = 3)
+            )),
+            shiny::tags$p("Use the plots above to assess the overall fit and investigate any patterns before reviewing the numerical tests.")
+          )
+        )
       })
 
-      output$univariate_section <- shiny::renderUI({
-        if (isTRUE(analysis_in_progress())) {
-          return(shiny::div(
-            class = "alert alert-info",
-            "Analysis is running. Univariate test results will appear here when computation finishes."
-          ))
-        }
+      output$multivariate_table <- shiny::renderUI({
+        res <- analysis_result()
+        shiny::req(res)
+        tbl <- res$multivariate_normality
+        shiny::req(!is.null(tbl))
+        info <- summary_info()
+        alpha <- if (is.null(info)) 0.05 else info$alpha
+        build_results_table(tbl, alpha = alpha, badge_columns = c("MVN"))
+      })
 
+      output$multivariate_scatter <- plotly::renderPlotly({
+        res <- analysis_result()
+        shiny::req(res)
+        df <- get_numeric_data(res)
+        shiny::req(df)
+        shiny::req(ncol(df) >= 2)
+        groups <- get_group_values(res)
+        if (ncol(df) >= 3 && nrow(df) >= 3) {
+          pcs <- tryCatch(stats::prcomp(df, center = TRUE, scale. = TRUE), error = function(e) NULL)
+          if (!is.null(pcs) && ncol(pcs$x) >= 3) {
+            coords <- pcs$x[, 1:3, drop = FALSE]
+            plt <- plotly::plot_ly(
+              x = coords[, 1],
+              y = coords[, 2],
+              z = coords[, 3],
+              type = "scatter3d",
+              mode = "markers",
+              marker = list(size = 4, opacity = 0.7),
+              color = if (!is.null(groups)) as.factor(groups) else NULL,
+              colors = "Viridis"
+            )
+            return(plotly::layout(
+              plt,
+              scene = list(
+                xaxis = list(title = "PC1"),
+                yaxis = list(title = "PC2"),
+                zaxis = list(title = "PC3")
+              ),
+              legend = list(title = list(text = res$subset %||% "Group"))
+            ))
+          }
+        }
+        plt <- plotly::plot_ly(
+          x = df[[1]],
+          y = df[[2]],
+          type = "scatter",
+          mode = "markers",
+          marker = list(size = 8, opacity = 0.7),
+          color = if (!is.null(groups)) as.factor(groups) else NULL,
+          colors = "Viridis"
+        )
+        plotly::layout(
+          plt,
+          xaxis = list(title = colnames(df)[1]),
+          yaxis = list(title = colnames(df)[2]),
+          legend = list(title = list(text = res$subset %||% "Group"))
+        )
+      })
+
+      output$multivariate_qq <- ggplot2::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        df <- get_numeric_data(res)
+        shiny::req(df)
+        shiny::req(ncol(df) >= 2, nrow(df) >= 3)
+        center <- colMeans(df)
+        cov_mat <- stats::cov(df)
+        distances <- tryCatch(stats::mahalanobis(df, center, cov_mat), error = function(e) NULL)
+        shiny::validate(shiny::need(!is.null(distances), "Unable to compute Mahalanobis distances for the current dataset."))
+        distances <- sort(distances)
+        theoretical <- stats::qchisq(stats::ppoints(length(distances)), df = ncol(df))
+        plot_df <- data.frame(expected = theoretical, observed = distances)
+        ggplot2::ggplot(plot_df, ggplot2::aes(x = expected, y = observed)) +
+          ggplot2::geom_point(color = "#1d3557", alpha = 0.75, size = 2.5) +
+          ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "#2a9d8f", linewidth = 1) +
+          ggplot2::labs(x = "Chi-square quantiles", y = "Squared Mahalanobis distance") +
+          ggplot2::theme_minimal(base_size = 13) +
+          ggplot2::theme(panel.grid.minor = ggplot2::element_blank())
+      })
+
+      `%||%` <- function(x, y) {
+        if (!is.null(x) && length(x) == 1 && nzchar(x)) x else y
+      }
+      output$univariate_content <- shiny::renderUI({
         res <- analysis_result()
         if (is.null(res)) {
           message <- if (isTRUE(analysis_needs_run())) {
-            "Click Run analysis in the Analysis Settings tab to compute the univariate normality results."
+            "Run the analysis to view univariate diagnostics."
           } else {
-            "Univariate normality results are unavailable. Re-run the analysis to generate them."
+            "Univariate results are unavailable. Re-run the analysis to generate them."
           }
-          return(shiny::div(class = "alert alert-info", message))
+          return(shiny::div(class = "alert alert-secondary", message))
         }
-
-        tbl <- res$univariate_normality
-        if (is.null(tbl)) {
-          return(shiny::div(
-            class = "alert alert-warning",
-            "The selected analysis did not return univariate normality results."
-          ))
+        numeric_data <- get_numeric_data(res)
+        if (is.null(numeric_data) || ncol(numeric_data) < 1) {
+          return(shiny::div(class = "alert alert-warning", "Select at least one numeric variable to display univariate diagnostics."))
         }
-
-        DT::dataTableOutput(ns("univariate_table"))
+        plot_height <- compute_plot_height(ncol(numeric_data))
+        shiny::tagList(
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Histograms with normal curve"),
+            ggplot2::plotOutput(ns("univariate_hist"), height = plot_height)
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Q-Q plots by variable"),
+            ggplot2::plotOutput(ns("univariate_qq"), height = plot_height)
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
+            shiny::uiOutput(ns("univariate_table"))
+          ),
+          shiny::tags$details(
+            shiny::tags$summary("Interpretation notes"),
+            shiny::tags$p("Histograms and Q-Q plots reveal departures from normality before you inspect test statistics."),
+            shiny::tags$p("Use the highlighted p-values to flag variables needing transformation or closer inspection.")
+          )
+        )
       })
 
-      output$descriptives_section <- shiny::renderUI({
-        if (isTRUE(analysis_in_progress())) {
-          return(shiny::div(
-            class = "alert alert-info",
-            "Analysis is running. Descriptive statistics will appear here when computation finishes."
-          ))
-        }
+      output$univariate_hist <- ggplot2::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        data <- get_numeric_data(res)
+        shiny::req(data)
+        MVN::univariate_diagnostic_plot(data, type = "histogram", title = "Histograms with normal overlay")
+      })
 
+      output$univariate_qq <- ggplot2::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        data <- get_numeric_data(res)
+        shiny::req(data)
+        MVN::univariate_diagnostic_plot(data, type = "qq", title = "Q-Q plots")
+      })
+
+      output$univariate_table <- shiny::renderUI({
+        res <- analysis_result()
+        shiny::req(res)
+        tbl <- res$univariate_normality
+        shiny::req(!is.null(tbl))
+        info <- summary_info()
+        alpha <- if (is.null(info)) 0.05 else info$alpha
+        build_results_table(tbl, alpha = alpha, badge_columns = c("Normality"))
+      })
+
+      output$descriptives_content <- shiny::renderUI({
         res <- analysis_result()
         opts <- settings()
         if (is.null(res) || is.null(opts)) {
-          return(shiny::div(
-            class = "alert alert-info",
-            "Click Run analysis in the Analysis Settings tab to compute descriptive statistics."
-          ))
+          return(shiny::div(class = "alert alert-secondary", "Run the analysis to compute descriptive statistics."))
         }
-
         if (!isTRUE(opts$descriptives)) {
-          return(shiny::div(
-            class = "alert alert-info",
-            "Enable descriptive statistics in the Analysis Settings tab to view this table."
-          ))
+          return(shiny::div(class = "alert alert-info", "Enable descriptive statistics in the Analysis Settings tab to view this section."))
         }
-
         tbl <- res$descriptives
         if (is.null(tbl)) {
-          return(shiny::div(
-            class = "alert alert-warning",
-            "Descriptive statistics were not returned. Re-run the analysis to compute them."
-          ))
+          return(shiny::div(class = "alert alert-warning", "Descriptive statistics were not returned. Re-run the analysis to compute them."))
         }
-
-        DT::dataTableOutput(ns("descriptives_table"))
+        info <- summary_info()
+        shiny::tagList(
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Variable summary"),
+            shiny::uiOutput(ns("descriptives_table"))
+          ),
+          shiny::tags$details(
+            shiny::tags$summary("Interpretation notes"),
+            shiny::tags$p("Bars illustrate mean ± SD within the observed range. Skew and kurtosis help detect asymmetry and heavy tails."),
+            if (isTRUE(info$cleaned_available)) {
+              shiny::tags$p("A cleaned dataset excluding flagged multivariate outliers is available in the Outlier diagnostics section.")
+            }
+          )
+        )
       })
 
-      output$outliers_section <- shiny::renderUI({
-        if (isTRUE(analysis_in_progress())) {
-          return(shiny::div(
-            class = "alert alert-info",
-            "Analysis is running. Outlier diagnostics will appear here when computation finishes."
-          ))
-        }
+      output$descriptives_table <- shiny::renderUI({
+        res <- analysis_result()
+        shiny::req(res)
+        tbl <- res$descriptives
+        shiny::req(!is.null(tbl))
+        render_descriptive_table(tbl)
+      })
 
+      output$outlier_content <- shiny::renderUI({
         res <- analysis_result()
         if (is.null(res)) {
           message <- if (isTRUE(analysis_needs_run())) {
-            "Click Run analysis in the Analysis Settings tab to compute outlier diagnostics."
+            "Run the analysis to compute outlier diagnostics."
           } else {
             "Outlier diagnostics are unavailable. Re-run the analysis to generate them."
           }
-          return(shiny::div(class = "alert alert-info", message))
+          return(shiny::div(class = "alert alert-secondary", message))
         }
-
-        outliers_tbl <- res$multivariate_outliers
-        cleaned_tbl <- res$new_data
-
-        sections <- list()
-
-        if (is.null(outliers_tbl)) {
-          sections <- append(
-            sections,
-            list(shiny::div(
-              class = "alert alert-warning",
-              "The selected configuration did not return multivariate outlier diagnostics."
-            ))
+        numeric_data <- get_numeric_data(res)
+        if (is.null(numeric_data) || ncol(numeric_data) < 1) {
+          return(shiny::div(class = "alert alert-warning", "Select numeric variables to review outlier diagnostics."))
+        }
+        info <- summary_info()
+        shiny::tagList(
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Variable boxplots"),
+            ggplot2::plotOutput(ns("outlier_boxplot"), height = compute_plot_height(ncol(numeric_data)))
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis distance"),
+            ggplot2::plotOutput(ns("outlier_distance_plot"), height = "320px")
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Flagged observations"),
+            shiny::uiOutput(ns("outlier_table"))
+          ),
+          shiny::tags$details(
+            shiny::tags$summary("Interpretation notes"),
+            shiny::tags$p(sprintf("Outlier detection uses the %s method.", info$outlier_label)),
+            shiny::tags$p("Review the distance plot for points exceeding the reference line and examine flagged cases below.")
           )
-        } else {
-          outliers_df <- as.data.frame(outliers_tbl)
-          if (nrow(outliers_df) > 0) {
-            sections <- append(
-              sections,
-              list(
-                shiny::tags$h5("Flagged observations"),
-                DT::dataTableOutput(ns("outliers_table"))
-              )
-            )
-          } else {
-            sections <- append(
-              sections,
-              list(shiny::div(
-                class = "alert alert-success",
-                "No multivariate outliers were detected."
-              ))
-            )
+        )
+      })
+
+      output$outlier_boxplot <- ggplot2::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        data <- get_numeric_data(res)
+        shiny::req(data)
+        MVN::univariate_diagnostic_plot(data, type = "boxplot", title = "Boxplots by variable")
+      })
+
+      output$outlier_distance_plot <- ggplot2::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        df <- get_numeric_data(res)
+        shiny::req(df)
+        shiny::req(ncol(df) >= 2)
+        center <- colMeans(df)
+        cov_mat <- stats::cov(df)
+        distances <- tryCatch(stats::mahalanobis(df, center, cov_mat), error = function(e) NULL)
+        shiny::validate(shiny::need(!is.null(distances), "Unable to compute Mahalanobis distances for the current dataset."))
+        labels <- rownames(df)
+        if (is.null(labels) || !length(labels)) {
+          labels <- seq_len(nrow(df))
+        }
+        distance_df <- data.frame(
+          Observation = seq_along(distances),
+          Label = labels,
+          Distance = distances,
+          stringsAsFactors = FALSE
+        )
+        flagged_tbl <- res$multivariate_outliers
+        flagged_ids <- character(0)
+        if (!is.null(flagged_tbl)) {
+          flagged_df <- as.data.frame(flagged_tbl)
+          if ("Observation" %in% names(flagged_df)) {
+            flagged_ids <- as.character(flagged_df$Observation[flagged_df$Outlier %in% c(TRUE, "TRUE")])
           }
         }
-
-        if (!is.null(cleaned_tbl)) {
-          sections <- append(
-            sections,
-            list(
-              shiny::tags$h5(class = "mt-4", "Cleaned dataset"),
-              DT::dataTableOutput(ns("clean_data_table"))
-            )
-          )
-        }
-
-        if (!length(sections)) {
-          sections <- list(shiny::div(
-            class = "alert alert-warning",
-            "Outlier diagnostics were not produced for this analysis."
-          ))
-        }
-
-        do.call(shiny::tagList, sections)
+        distance_df$Flagged <- ifelse(distance_df$Label %in% flagged_ids, "Flagged", "Observed")
+        info <- summary_info()
+        cutoff <- stats::qchisq(1 - info$alpha, df = ncol(df))
+        distance_df$Flagged <- factor(distance_df$Flagged, levels = c("Observed", "Flagged"))
+        ggplot2::ggplot(distance_df, ggplot2::aes(x = Observation, y = Distance, color = Flagged)) +
+          ggplot2::geom_line(alpha = 0.4, color = "#adb5bd") +
+          ggplot2::geom_point(size = 2.5) +
+          ggplot2::geom_hline(yintercept = cutoff, linetype = "dashed", color = "#d62828") +
+          ggplot2::scale_color_manual(values = c("Observed" = "#264653", "Flagged" = "#d62828")) +
+          ggplot2::labs(x = "Observation index", y = "Mahalanobis distance") +
+          ggplot2::theme_minimal(base_size = 13) +
+          ggplot2::theme(legend.position = "top", panel.grid.minor = ggplot2::element_blank())
       })
 
-      output$multivariate_table <- DT::renderDataTable({
-        res <- analysis_result()
-        shiny::req(res)
-        tbl <- res$multivariate_normality
-        shiny::validate(shiny::need(!is.null(tbl), "Multivariate test results are unavailable."))
-        render_results_table(as.data.frame(tbl))
-      })
-
-      output$univariate_table <- DT::renderDataTable({
-        res <- analysis_result()
-        shiny::req(res)
-        tbl <- res$univariate_normality
-        shiny::validate(shiny::need(!is.null(tbl), "Univariate test results are unavailable."))
-        render_results_table(as.data.frame(tbl))
-      })
-
-      output$descriptives_table <- DT::renderDataTable({
-        res <- analysis_result()
-        opts <- settings()
-        shiny::req(res, opts, isTRUE(opts$descriptives))
-        tbl <- res$descriptives
-        shiny::req(!is.null(tbl))
-        render_results_table(as.data.frame(tbl))
-      })
-
-      output$outliers_table <- DT::renderDataTable({
+      output$outlier_table <- shiny::renderUI({
         res <- analysis_result()
         shiny::req(res)
         tbl <- res$multivariate_outliers
-        shiny::req(tbl)
+        if (is.null(tbl)) {
+          return(shiny::div(class = "alert alert-info", "Enable a multivariate outlier method to view flagged cases."))
+        }
         df <- as.data.frame(tbl)
-        shiny::req(nrow(df) > 0)
-        render_results_table(df)
+        if (!nrow(df)) {
+          return(shiny::div(class = "alert alert-success", "No multivariate outliers were detected."))
+        }
+        build_results_table(df, alpha = 0.05, highlight_p = FALSE, badge_columns = c("Outlier"))
       })
-
-      output$clean_data_table <- DT::renderDataTable({
-        res <- analysis_result()
-        shiny::req(res)
-        tbl <- res$new_data
-        shiny::req(tbl)
-        render_results_table(as.data.frame(tbl))
-      })
-
       output$analysis_summary <- shiny::renderPrint({
         res <- analysis_result()
         shiny::req(res)
