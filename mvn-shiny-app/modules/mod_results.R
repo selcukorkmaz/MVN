@@ -19,26 +19,53 @@ mod_results_ui <- function(id) {
   )
 }
 
-mod_results_server <- function(id, processed_data, settings) {
+mod_results_server <- function(id, processed_data, settings, analysis_data = NULL, subset = NULL) {
   stopifnot(is.function(processed_data), is.function(settings))
+  data_for_analysis <- if (is.null(analysis_data)) processed_data else analysis_data
+  stopifnot(is.function(data_for_analysis))
+  subset_var <- if (is.null(subset)) {
+    function() NULL
+  } else {
+    stopifnot(is.function(subset))
+    subset
+  }
 
   shiny::moduleServer(
     id,
     function(input, output, session) {
       analysis_result <- shiny::reactive({
-        df <- processed_data()
+        df <- data_for_analysis()
         opts <- settings()
         shiny::req(df, opts)
 
         df <- as.data.frame(df)
-        if (ncol(df) < 2) {
+        group <- subset_var()
+        if (!is.null(group) && !nzchar(group)) {
+          group <- NULL
+        }
+        if (!is.null(group) && !(group %in% names(df))) {
+          shiny::showNotification(sprintf("Grouping variable '%s' not found in the prepared data.", group), type = "error")
+          group <- NULL
+        }
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        if (!is.null(group)) {
+          numeric_cols <- setdiff(numeric_cols, group)
+        }
+        if (length(numeric_cols) < 2) {
           shiny::showNotification("At least two numeric variables are required for multivariate analysis.", type = "warning")
           return(NULL)
         }
 
+        analysis_df <- if (is.null(group)) {
+          df[, numeric_cols, drop = FALSE]
+        } else {
+          df[, c(numeric_cols, group), drop = FALSE]
+        }
+
         tryCatch({
           MVN::mvn(
-            data = df,
+            data = analysis_df,
+            subset = group,
             mvn_test = opts$mvn_test,
             univariate_test = opts$univariate_test,
             multivariate_outlier_method = opts$outlier_method,
@@ -60,11 +87,20 @@ mod_results_server <- function(id, processed_data, settings) {
         }
 
         opts <- settings()
-        data <- processed_data()
+        data <- data_for_analysis()
         shiny::req(opts, data)
 
+        data <- as.data.frame(data)
+        group <- subset_var()
+        if (!is.null(group) && !nzchar(group)) {
+          group <- NULL
+        }
+        numeric_cols <- names(data)[vapply(data, is.numeric, logical(1))]
+        if (!is.null(group)) {
+          numeric_cols <- setdiff(numeric_cols, group)
+        }
         sample_n <- nrow(data)
-        sample_p <- ncol(data)
+        sample_p <- length(numeric_cols)
         test_name <- opts$test_label
         if (is.null(test_name) || is.na(test_name)) {
           test_name <- opts$mvn_test
@@ -89,6 +125,14 @@ mod_results_server <- function(id, processed_data, settings) {
           sample_p,
           test_name
         )
+
+        if (!is.null(group) && group %in% names(data)) {
+          group_levels <- length(unique(data[[group]][!is.na(data[[group]])]))
+          base_message <- paste0(
+            base_message,
+            sprintf(" Grouping variable: %s (%d levels).", group, group_levels)
+          )
+        }
 
         if (isTRUE(is.finite(p_val))) {
           detail <- paste("Reported p-value:", formatC(p_val, digits = 3, format = "g"))

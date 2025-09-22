@@ -29,8 +29,13 @@ mod_data_prep_ui <- function(id) {
           condition = sprintf("input['%s'] == 'upload'", ns("data_source")),
           shiny::fileInput(
             ns("file_upload"),
-            label = "Upload CSV or RDS",
-            accept = c(".csv", ".tsv", ".txt", ".rds", ".rda", ".RData")
+            label = "Upload CSV, text, Excel, SPSS, or R data",
+            accept = c(
+              ".csv", ".tsv", ".txt",
+              ".rds", ".rda", ".RData",
+              ".xls", ".xlsx", ".xlsm",
+              ".sav", ".por"
+            )
           ),
           shiny::checkboxInput(ns("file_header"), label = "First row has column names", value = TRUE),
           shiny::selectInput(
@@ -38,7 +43,29 @@ mod_data_prep_ui <- function(id) {
             label = "Column separator",
             choices = c("," = ",", ";" = ";", "Tab" = "\t"),
             selected = ","
+          ),
+          shiny::helpText("Excel files load the first worksheet by default.")
+        )
+      ),
+      bslib::card(
+        bslib::card_header("Variables"),
+        shiny::selectizeInput(
+          ns("selected_columns"),
+          label = "Numeric variables for analysis",
+          choices = NULL,
+          selected = NULL,
+          multiple = TRUE,
+          options = list(
+            plugins = list("remove_button"),
+            placeholder = "Select numeric columns"
           )
+        ),
+        shiny::helpText("Columns left unselected will be excluded from downstream analysis."),
+        shiny::selectInput(
+          ns("group_variable"),
+          label = "Grouping variable (optional)",
+          choices = c("None" = ""),
+          selected = ""
         )
       ),
       bslib::card(
@@ -110,7 +137,6 @@ mod_data_prep_server <- function(id) {
   shiny::moduleServer(
     id,
     function(input, output, session) {
-      excluded_cols <- shiny::reactiveVal(character())
       lambda_vals <- shiny::reactiveVal(NULL)
 
       sample_dataset <- shiny::reactive({
@@ -138,6 +164,16 @@ mod_data_prep_server <- function(id) {
               stringsAsFactors = FALSE,
               check.names = FALSE
             )
+          } else if (ext %in% c("xls", "xlsx", "xlsm")) {
+            if (!requireNamespace("readxl", quietly = TRUE)) {
+              stop("Package 'readxl' is required to read Excel files.")
+            }
+            readxl::read_excel(file$datapath, .name_repair = "minimal")
+          } else if (ext %in% c("sav", "por")) {
+            if (!requireNamespace("haven", quietly = TRUE)) {
+              stop("Package 'haven' is required to read SPSS files.")
+            }
+            haven::read_sav(file$datapath)
           } else if (ext == "rds") {
             readRDS(file$datapath)
           } else if (ext %in% c("rda", "rdata")) {
@@ -165,17 +201,58 @@ mod_data_prep_server <- function(id) {
         }
       })
 
+      observeEvent(raw_data(), {
+        df <- raw_data()
+        if (is.null(df)) {
+          shiny::updateSelectizeInput(session, "selected_columns", choices = character(), selected = character(), server = TRUE)
+          shiny::updateSelectInput(session, "group_variable", choices = c("None" = ""), selected = "")
+          return()
+        }
+        df <- as.data.frame(df)
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        shiny::updateSelectizeInput(
+          session,
+          "selected_columns",
+          choices = numeric_cols,
+          selected = numeric_cols,
+          server = TRUE
+        )
+        group_choices <- setdiff(names(df), numeric_cols)
+        shiny::updateSelectInput(
+          session,
+          "group_variable",
+          choices = c("None" = "", stats::setNames(group_choices, group_choices)),
+          selected = ""
+        )
+      }, ignoreNULL = FALSE)
+
+      group_variable <- shiny::reactive({
+        value <- input$group_variable
+        if (is.null(value) || !nzchar(value)) {
+          return(NULL)
+        }
+        value
+      })
+
       numeric_data <- shiny::reactive({
         df <- raw_data()
         shiny::req(df)
         df <- as.data.frame(df)
         numeric_cols <- vapply(df, is.numeric, logical(1))
-        excluded_cols(names(df)[!numeric_cols])
+        selected <- input$selected_columns
+        if (is.null(selected)) {
+          selected <- character()
+        }
+        selected <- intersect(selected, names(df)[numeric_cols])
         if (!any(numeric_cols)) {
           shiny::showNotification("No numeric columns detected in the selected data set.", type = "error")
           return(NULL)
         }
-        df[, numeric_cols, drop = FALSE]
+        if (length(selected) == 0) {
+          shiny::showNotification("Select at least one numeric column to continue.", type = "warning")
+          return(NULL)
+        }
+        df[, selected, drop = FALSE]
       })
 
       imputed_data <- shiny::reactive({
@@ -226,35 +303,89 @@ mod_data_prep_server <- function(id) {
         df
       })
 
+      analysis_data <- shiny::reactive({
+        df <- processed_data()
+        if (is.null(df)) {
+          return(NULL)
+        }
+        group <- group_variable()
+        if (is.null(group)) {
+          return(df)
+        }
+        original <- raw_data()
+        if (is.null(original) || !(group %in% names(original))) {
+          shiny::showNotification(sprintf("Grouping variable '%s' is not available in the data.", group), type = "error")
+          return(df)
+        }
+        group_col <- original[[group]]
+        if (length(group_col) != nrow(df)) {
+          shiny::showNotification(sprintf("Grouping variable '%s' could not be aligned with the prepared data.", group), type = "error")
+          return(df)
+        }
+        df[[group]] <- group_col
+        df
+      })
+
       output$data_info <- shiny::renderPrint({
         df <- raw_data()
         shiny::req(df)
+        df <- as.data.frame(df)
+        numeric_flags <- vapply(df, is.numeric, logical(1))
         numeric_df <- numeric_data()
+        detected_numeric <- sum(numeric_flags)
+        selected_numeric <- if (!is.null(numeric_df)) ncol(numeric_df) else 0
+        cat("Rows:", nrow(df), " Columns:", ncol(df), "\n")
+        cat("Numeric columns detected:", detected_numeric, "\n")
+        cat("Numeric columns selected:", selected_numeric, "\n")
+        group <- group_variable()
+        if (!is.null(group)) {
+          valid_group <- df[[group]]
+          distinct_groups <- length(unique(valid_group[!is.na(valid_group)]))
+          cat("Grouping variable:", group, sprintf("(%d levels)", distinct_groups), "\n")
+        }
         if (is.null(numeric_df)) {
-          cat("Rows:", nrow(df), " Columns:", ncol(df), "\n")
-          cat("No numeric columns were found.")
+          cat("No numeric columns were selected for analysis.\n")
+          return(invisible(NULL))
+        }
+        missing_counts <- colSums(is.na(numeric_df))
+        if (any(missing_counts > 0)) {
+          cat("Missing values before imputation:\n")
+          print(missing_counts)
         } else {
-          cat("Rows:", nrow(df), " Columns:", ncol(df), "\n")
-          cat("Numeric columns used:", ncol(numeric_df), "\n")
-          missing_counts <- colSums(is.na(numeric_df))
-          if (any(missing_counts > 0)) {
-            cat("Missing values before imputation:\n")
-            print(missing_counts)
-          } else {
-            cat("No missing values in numeric columns before imputation.\n")
-          }
+          cat("No missing values in numeric columns before imputation.\n")
         }
       })
 
       output$excluded_ui <- shiny::renderUI({
-        excluded <- excluded_cols()
-        if (length(excluded) == 0) {
+        df <- raw_data()
+        if (is.null(df)) {
           return(NULL)
         }
-        shiny::div(
-          class = "alert alert-info",
-          sprintf("Excluded non-numeric columns: %s", paste(excluded, collapse = ", "))
-        )
+        df <- as.data.frame(df)
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        auto_excluded <- setdiff(names(df), numeric_cols)
+        selected <- input$selected_columns
+        if (is.null(selected)) {
+          selected <- character()
+        }
+        manual_excluded <- setdiff(numeric_cols, selected)
+        alerts <- list()
+        if (length(auto_excluded) > 0) {
+          alerts[[length(alerts) + 1]] <- shiny::div(
+            class = "alert alert-info",
+            sprintf("Automatically excluded non-numeric columns: %s", paste(auto_excluded, collapse = ", "))
+          )
+        }
+        if (length(manual_excluded) > 0) {
+          alerts[[length(alerts) + 1]] <- shiny::div(
+            class = "alert alert-secondary",
+            sprintf("Manually excluded numeric columns: %s", paste(manual_excluded, collapse = ", "))
+          )
+        }
+        if (length(alerts) == 0) {
+          return(NULL)
+        }
+        do.call(shiny::tagList, alerts)
       })
 
       output$missing_overview <- shiny::renderTable({
@@ -269,7 +400,7 @@ mod_data_prep_server <- function(id) {
       })
 
       output$data_preview <- shiny::renderTable({
-        df <- processed_data()
+        df <- analysis_data()
         shiny::req(df)
         utils::head(df, n = 10)
       }, rownames = TRUE)
@@ -297,6 +428,8 @@ mod_data_prep_server <- function(id) {
         raw_data = raw_data,
         numeric_data = numeric_data,
         processed_data = processed_data,
+        analysis_data = analysis_data,
+        subset = group_variable,
         lambda = shiny::reactive(lambda_vals())
       )
     }

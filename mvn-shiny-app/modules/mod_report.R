@@ -22,8 +22,10 @@ mod_report_ui <- function(id) {
   )
 }
 
-mod_report_server <- function(id, processed_data, analysis_result, settings) {
+mod_report_server <- function(id, processed_data, analysis_result, settings, analysis_data = NULL) {
   stopifnot(is.function(processed_data), is.function(analysis_result), is.function(settings))
+  data_for_export <- if (is.null(analysis_data)) processed_data else analysis_data
+  stopifnot(is.function(data_for_export))
 
   shiny::moduleServer(
     id,
@@ -47,6 +49,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings) {
 
         sample_n <- nrow(data)
         sample_p <- ncol(data)
+        subset_var <- res$subset
         test_name <- opts$test_label
         if (is.null(test_name) || is.na(test_name)) {
           test_name <- opts$mvn_test
@@ -68,6 +71,15 @@ mod_report_server <- function(id, processed_data, analysis_result, settings) {
               sample_p
             )
           ),
+          if (!is.null(subset_var) && nzchar(subset_var) && !is.null(res$data) && subset_var %in% names(res$data)) {
+            shiny::p(
+              sprintf(
+                "Grouping variable: %s (%d levels).",
+                subset_var,
+                length(unique(res$data[[subset_var]][!is.na(res$data[[subset_var]])]))
+              )
+            )
+          },
           shiny::p(
             sprintf(
               "Latest multivariate normality test: %s (alpha = %s).",
@@ -99,7 +111,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings) {
           paste0(base_name(), "_data.csv")
         },
         content = function(file) {
-          data <- processed_data()
+          data <- data_for_export()
           shiny::req(data)
           utils::write.csv(data, file, row.names = FALSE)
         }
