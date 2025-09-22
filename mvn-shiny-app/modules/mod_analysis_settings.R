@@ -176,10 +176,10 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
         ignoreNULL = FALSE
       )
 
-      run_counter <- shiny::reactiveVal(0L)
-      observeEvent(input$run_analysis, {
-        run_counter(run_counter() + 1L)
-      }, ignoreNULL = FALSE)
+      run_trigger <- shiny::reactive({
+        count <- input$run_analysis
+        if (is.null(count)) 0L else as.integer(count)
+      })
 
       data_dims <- shiny::reactive({
         if (is.null(processed_data)) {
@@ -241,7 +241,7 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
 
       list(
         settings = settings,
-        run_analysis = shiny::reactive(run_counter())
+        run_analysis = run_trigger
       )
     }
   )
