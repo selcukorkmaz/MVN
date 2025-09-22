@@ -16,6 +16,18 @@ if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("The 'ggplot2' package is required to run this application.")
 }
 
+if (!requireNamespace("DT", quietly = TRUE)) {
+  stop("The 'DT' package is required to display interactive result tables.")
+}
+
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  stop("The 'jsonlite' package is required to export analysis parameters as JSON.")
+}
+
+if (!requireNamespace("yaml", quietly = TRUE)) {
+  stop("The 'yaml' package is required to export analysis parameters as YAML.")
+}
+
 library(MVN)
 
 modules_dir <- file.path(getwd(), "modules")
