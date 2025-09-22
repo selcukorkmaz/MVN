@@ -50,14 +50,20 @@ mod_results_ui <- function(id) {
         shiny::uiOutput(ns("results_message"))
       ),
       bslib::card(
-        bslib::card_header("Detailed results"),
-        shiny::tabsetPanel(
-          type = "pills",
-          shiny::tabPanel("Multivariate Tests", DT::dataTableOutput(ns("multivariate_table"))),
-          shiny::tabPanel("Univariate Tests", DT::dataTableOutput(ns("univariate_table"))),
-          shiny::tabPanel("Descriptive Statistics", DT::dataTableOutput(ns("descriptives_table"))),
-          shiny::tabPanel("Outliers", shiny::uiOutput(ns("outlier_tab_content")))
-        )
+        bslib::card_header("Multivariate normality test"),
+        shiny::uiOutput(ns("multivariate_section"))
+      ),
+      bslib::card(
+        bslib::card_header("Univariate normality tests"),
+        shiny::uiOutput(ns("univariate_section"))
+      ),
+      bslib::card(
+        bslib::card_header("Descriptive statistics"),
+        shiny::uiOutput(ns("descriptives_section"))
+      ),
+      bslib::card(
+        bslib::card_header("Outlier diagnostics"),
+        shiny::uiOutput(ns("outliers_section"))
       ),
       bslib::accordion(
         id = ns("results_details"),
@@ -473,7 +479,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (isTRUE(info$cleaned_available)) {
           details <- c(
             details,
-            "A cleaned dataset excluding flagged outliers is available in the Outliers tab."
+            "A cleaned dataset excluding flagged outliers is available in the Outlier diagnostics section below."
           )
         }
 
@@ -511,6 +517,171 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
       }
 
+      output$multivariate_section <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Analysis is running. Multivariate test results will appear here when computation finishes."
+          ))
+        }
+
+        res <- analysis_result()
+        if (is.null(res)) {
+          message <- if (isTRUE(analysis_needs_run())) {
+            "Click Run analysis in the Analysis Settings tab to compute the multivariate normality results."
+          } else {
+            "Multivariate normality results are unavailable. Re-run the analysis to generate them."
+          }
+          return(shiny::div(class = "alert alert-info", message))
+        }
+
+        tbl <- res$multivariate_normality
+        if (is.null(tbl)) {
+          return(shiny::div(
+            class = "alert alert-warning",
+            "The selected analysis did not return multivariate normality results."
+          ))
+        }
+
+        DT::dataTableOutput(ns("multivariate_table"))
+      })
+
+      output$univariate_section <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Analysis is running. Univariate test results will appear here when computation finishes."
+          ))
+        }
+
+        res <- analysis_result()
+        if (is.null(res)) {
+          message <- if (isTRUE(analysis_needs_run())) {
+            "Click Run analysis in the Analysis Settings tab to compute the univariate normality results."
+          } else {
+            "Univariate normality results are unavailable. Re-run the analysis to generate them."
+          }
+          return(shiny::div(class = "alert alert-info", message))
+        }
+
+        tbl <- res$univariate_normality
+        if (is.null(tbl)) {
+          return(shiny::div(
+            class = "alert alert-warning",
+            "The selected analysis did not return univariate normality results."
+          ))
+        }
+
+        DT::dataTableOutput(ns("univariate_table"))
+      })
+
+      output$descriptives_section <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Analysis is running. Descriptive statistics will appear here when computation finishes."
+          ))
+        }
+
+        res <- analysis_result()
+        opts <- settings()
+        if (is.null(res) || is.null(opts)) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Click Run analysis in the Analysis Settings tab to compute descriptive statistics."
+          ))
+        }
+
+        if (!isTRUE(opts$descriptives)) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Enable descriptive statistics in the Analysis Settings tab to view this table."
+          ))
+        }
+
+        tbl <- res$descriptives
+        if (is.null(tbl)) {
+          return(shiny::div(
+            class = "alert alert-warning",
+            "Descriptive statistics were not returned. Re-run the analysis to compute them."
+          ))
+        }
+
+        DT::dataTableOutput(ns("descriptives_table"))
+      })
+
+      output$outliers_section <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(
+            class = "alert alert-info",
+            "Analysis is running. Outlier diagnostics will appear here when computation finishes."
+          ))
+        }
+
+        res <- analysis_result()
+        if (is.null(res)) {
+          message <- if (isTRUE(analysis_needs_run())) {
+            "Click Run analysis in the Analysis Settings tab to compute outlier diagnostics."
+          } else {
+            "Outlier diagnostics are unavailable. Re-run the analysis to generate them."
+          }
+          return(shiny::div(class = "alert alert-info", message))
+        }
+
+        outliers_tbl <- res$multivariate_outliers
+        cleaned_tbl <- res$new_data
+
+        sections <- list()
+
+        if (is.null(outliers_tbl)) {
+          sections <- append(
+            sections,
+            list(shiny::div(
+              class = "alert alert-warning",
+              "The selected configuration did not return multivariate outlier diagnostics."
+            ))
+          )
+        } else {
+          outliers_df <- as.data.frame(outliers_tbl)
+          if (nrow(outliers_df) > 0) {
+            sections <- append(
+              sections,
+              list(
+                shiny::tags$h5("Flagged observations"),
+                DT::dataTableOutput(ns("outliers_table"))
+              )
+            )
+          } else {
+            sections <- append(
+              sections,
+              list(shiny::div(
+                class = "alert alert-success",
+                "No multivariate outliers were detected."
+              ))
+            )
+          }
+        }
+
+        if (!is.null(cleaned_tbl)) {
+          sections <- append(
+            sections,
+            list(
+              shiny::tags$h5(class = "mt-4", "Cleaned dataset"),
+              DT::dataTableOutput(ns("clean_data_table"))
+            )
+          )
+        }
+
+        if (!length(sections)) {
+          sections <- list(shiny::div(
+            class = "alert alert-warning",
+            "Outlier diagnostics were not produced for this analysis."
+          ))
+        }
+
+        do.call(shiny::tagList, sections)
+      })
+
       output$multivariate_table <- DT::renderDataTable({
         res <- analysis_result()
         shiny::req(res)
@@ -530,12 +701,9 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
       output$descriptives_table <- DT::renderDataTable({
         res <- analysis_result()
         opts <- settings()
-        shiny::req(res, opts)
-        if (!isTRUE(opts$descriptives)) {
-          shiny::validate(shiny::need(FALSE, "Enable descriptive statistics in the Analysis Settings tab to view this table."))
-        }
+        shiny::req(res, opts, isTRUE(opts$descriptives))
         tbl <- res$descriptives
-        shiny::validate(shiny::need(!is.null(tbl), "Descriptive statistics were not returned."))
+        shiny::req(!is.null(tbl))
         render_results_table(as.data.frame(tbl))
       })
 
@@ -555,49 +723,6 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         tbl <- res$new_data
         shiny::req(tbl)
         render_results_table(as.data.frame(tbl))
-      })
-
-      output$outlier_tab_content <- shiny::renderUI({
-        if (isTRUE(analysis_in_progress())) {
-          return(shiny::div(class = "text-muted", "Outlier diagnostics will appear when the analysis finishes."))
-        }
-
-        res <- analysis_result()
-        if (is.null(res)) {
-          return(shiny::div(class = "text-muted", "Run the analysis to view outlier diagnostics."))
-        }
-
-        outliers_tbl <- res$multivariate_outliers
-        cleaned_tbl <- res$new_data
-
-        sections <- list()
-
-        if (!is.null(outliers_tbl) && nrow(as.data.frame(outliers_tbl)) > 0) {
-          sections <- append(
-            sections,
-            list(
-              shiny::tags$h5("Flagged observations"),
-              DT::dataTableOutput(ns("outliers_table"))
-            )
-          )
-        } else {
-          sections <- append(
-            sections,
-            list(shiny::div(class = "alert alert-success", "No multivariate outliers were detected."))
-          )
-        }
-
-        if (!is.null(cleaned_tbl)) {
-          sections <- append(
-            sections,
-            list(
-              shiny::tags$h5(class = "mt-4", "Cleaned dataset"),
-              DT::dataTableOutput(ns("clean_data_table"))
-            )
-          )
-        }
-
-        do.call(shiny::tagList, sections)
       })
 
       output$analysis_summary <- shiny::renderPrint({
