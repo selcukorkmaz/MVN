@@ -1,49 +1,73 @@
 mod_results_ui <- function(id) {
   ns <- shiny::NS(id)
 
-  bslib::layout_column_wrap(
-    width = 1,
-    bslib::layout_column_wrap(
-      width = 1/5,
+  summary_cards <- shiny::div(
+    class = "summary-cards d-flex flex-wrap gap-3",
+    shiny::div(
+      class = "summary-card",
       bslib::value_box(
         title = "Observations",
-        value = shiny::textOutput(ns("summary_n"), inline = TRUE)
-      ),
+        value = shiny::textOutput(ns("summary_n"), inline = TRUE),
+        showcase = shiny::tags$span("👥", class = "display-6", `aria-hidden` = "true")
+      )
+    ),
+    shiny::div(
+      class = "summary-card",
       bslib::value_box(
         title = "Variables",
-        value = shiny::textOutput(ns("summary_p"), inline = TRUE)
-      ),
+        value = shiny::textOutput(ns("summary_p"), inline = TRUE),
+        showcase = shiny::tags$span("🔢", class = "display-6", `aria-hidden` = "true")
+      )
+    ),
+    shiny::div(
+      class = "summary-card",
       bslib::value_box(
-        title = "MVN test",
-        value = shiny::textOutput(ns("summary_test"), inline = TRUE)
-      ),
+        title = "MVN test & p-value",
+        value = shiny::uiOutput(ns("summary_test_details")),
+        showcase = shiny::tags$span("📊", class = "display-6", `aria-hidden` = "true")
+      )
+    ),
+    shiny::div(
+      class = "summary-card",
       bslib::value_box(
-        title = "p-value",
-        value = shiny::textOutput(ns("summary_pvalue"), inline = TRUE)
-      ),
-      bslib::value_box(
-        title = "Normality",
+        title = "Normality decision",
         value = shiny::uiOutput(ns("summary_decision"))
       )
-    ),
-    bslib::card(
-      bslib::card_header("Multivariate normality"),
-      shiny::uiOutput(ns("results_message"))
-    ),
-    bslib::card(
-      bslib::card_header("Detailed tables"),
-      shiny::tabsetPanel(
-        type = "pills",
-        shiny::tabPanel("Multivariate tests", DT::dataTableOutput(ns("multivariate_table"))),
-        shiny::tabPanel("Univariate tests", DT::dataTableOutput(ns("univariate_table"))),
-        shiny::tabPanel("Descriptive statistics", DT::dataTableOutput(ns("descriptives_table"))),
-        shiny::tabPanel("Outliers", DT::dataTableOutput(ns("outliers_table"))),
-        shiny::tabPanel("Cleaned data", DT::dataTableOutput(ns("clean_data_table")))
+    )
+  )
+
+  shiny::tagList(
+    shiny::tags$style(
+      shiny::HTML(
+        ".summary-cards {\n          display: flex;\n          flex-wrap: wrap;\n          gap: 1rem;\n        }\n        .summary-cards .summary-card {\n          flex: 1 1 240px;\n          display: flex;\n        }\n        .summary-cards .summary-card > * {\n          flex: 1 1 auto;\n        }\n        @media (max-width: 992px) {\n          .summary-cards .summary-card {\n            flex: 1 1 calc(50% - 1rem);\n          }\n        }\n        @media (max-width: 576px) {\n          .summary-cards .summary-card {\n            flex: 1 1 100%;\n          }\n        }"
       )
     ),
-    bslib::card(
-      bslib::card_header("Analysis details"),
-      shiny::verbatimTextOutput(ns("analysis_summary"))
+    bslib::layout_column_wrap(
+      width = 1,
+      summary_cards,
+      bslib::card(
+        bslib::card_header("Multivariate normality"),
+        shiny::uiOutput(ns("results_message"))
+      ),
+      bslib::card(
+        bslib::card_header("Detailed results"),
+        shiny::tabsetPanel(
+          type = "pills",
+          shiny::tabPanel("Multivariate Tests", DT::dataTableOutput(ns("multivariate_table"))),
+          shiny::tabPanel("Univariate Tests", DT::dataTableOutput(ns("univariate_table"))),
+          shiny::tabPanel("Descriptive Statistics", DT::dataTableOutput(ns("descriptives_table"))),
+          shiny::tabPanel("Outliers", shiny::uiOutput(ns("outlier_tab_content")))
+        )
+      ),
+      bslib::accordion(
+        id = ns("results_details"),
+        open = character(0),
+        bslib::accordion_panel(
+          title = "Analysis details",
+          value = "analysis-details",
+          shiny::verbatimTextOutput(ns("analysis_summary"))
+        )
+      )
     )
   )
 }
@@ -338,40 +362,49 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         format(info$p, big.mark = ",", trim = TRUE)
       })
 
-      output$summary_test <- shiny::renderText({
+      output$summary_test_details <- shiny::renderUI({
         info <- summary_info()
         if (is.null(info)) {
-          return("\u2014")
+          return(shiny::div(class = "text-muted", "\u2014"))
         }
-        sprintf("%s (\u03b1 = %s)", info$test_label, format(info$alpha, digits = 3, trim = TRUE))
-      })
-
-      output$summary_pvalue <- shiny::renderText({
-        info <- summary_info()
-        if (is.null(info)) {
-          return("\u2014")
-        }
-        info$p_display
+        shiny::tagList(
+          shiny::tags$div(class = "fw-semibold", info$test_label),
+          shiny::tags$small(
+            class = "text-muted",
+            sprintf("\u03b1 = %s \u2022 p = %s", format(info$alpha, digits = 3, trim = TRUE), info$p_display)
+          )
+        )
       })
 
       output$summary_decision <- shiny::renderUI({
         info <- summary_info()
         if (is.null(info)) {
-          return(shiny::tags$span(class = "badge bg-secondary", "Awaiting analysis"))
+          return(shiny::tags$span(
+            class = "badge bg-secondary d-inline-flex align-items-center gap-2",
+            shiny::tags$span("⏳", `aria-hidden` = "true"),
+            shiny::tags$span("Awaiting analysis")
+          ))
         }
         if (!is.null(info$p_value) && is.finite(info$p_value)) {
           if (info$p_value < info$alpha) {
             badge_class <- "badge bg-danger"
+            badge_icon <- "❌"
             badge_text <- "Not normal"
           } else {
             badge_class <- "badge bg-success"
+            badge_icon <- "✅"
             badge_text <- "Normal"
           }
         } else {
           badge_class <- "badge bg-info text-dark"
+          badge_icon <- "ℹ️"
           badge_text <- "Review details"
         }
-        shiny::tags$span(class = badge_class, badge_text)
+        shiny::tags$span(
+          class = paste(badge_class, "d-inline-flex align-items-center gap-2"),
+          shiny::tags$span(badge_icon, `aria-hidden` = "true"),
+          shiny::tags$span(badge_text)
+        )
       })
 
       output$results_message <- shiny::renderUI({
@@ -433,7 +466,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (isTRUE(info$cleaned_available)) {
           details <- c(
             details,
-            "A cleaned dataset excluding flagged outliers is available in the Cleaned data tab."
+            "A cleaned dataset excluding flagged outliers is available in the Outliers tab."
           )
         }
 
@@ -503,13 +536,9 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         res <- analysis_result()
         shiny::req(res)
         tbl <- res$multivariate_outliers
-        if (is.null(tbl)) {
-          shiny::validate(shiny::need(FALSE, "No multivariate outliers were detected."))
-        }
+        shiny::req(tbl)
         df <- as.data.frame(tbl)
-        if (!nrow(df)) {
-          shiny::validate(shiny::need(FALSE, "No multivariate outliers were detected."))
-        }
+        shiny::req(nrow(df) > 0)
         render_results_table(df)
       })
 
@@ -517,10 +546,51 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         res <- analysis_result()
         shiny::req(res)
         tbl <- res$new_data
-        if (is.null(tbl)) {
-          shiny::validate(shiny::need(FALSE, "Cleaned dataset is generated when multivariate outliers are removed."))
-        }
+        shiny::req(tbl)
         render_results_table(as.data.frame(tbl))
+      })
+
+      output$outlier_tab_content <- shiny::renderUI({
+        if (isTRUE(analysis_in_progress())) {
+          return(shiny::div(class = "text-muted", "Outlier diagnostics will appear when the analysis finishes."))
+        }
+
+        res <- analysis_result()
+        if (is.null(res)) {
+          return(shiny::div(class = "text-muted", "Run the analysis to view outlier diagnostics."))
+        }
+
+        outliers_tbl <- res$multivariate_outliers
+        cleaned_tbl <- res$new_data
+
+        sections <- list()
+
+        if (!is.null(outliers_tbl) && nrow(as.data.frame(outliers_tbl)) > 0) {
+          sections <- append(
+            sections,
+            list(
+              shiny::tags$h5("Flagged observations"),
+              DT::dataTableOutput(ns("outliers_table"))
+            )
+          )
+        } else {
+          sections <- append(
+            sections,
+            list(shiny::div(class = "alert alert-success", "No multivariate outliers were detected."))
+          )
+        }
+
+        if (!is.null(cleaned_tbl)) {
+          sections <- append(
+            sections,
+            list(
+              shiny::tags$h5(class = "mt-4", "Cleaned dataset"),
+              DT::dataTableOutput(ns("clean_data_table"))
+            )
+          )
+        }
+
+        do.call(shiny::tagList, sections)
       })
 
       output$analysis_summary <- shiny::renderPrint({
