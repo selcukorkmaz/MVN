@@ -70,7 +70,7 @@ mod_analysis_settings_ui <- function(id) {
         shiny::helpText("Energy test always uses bootstrap replicates. Adjust settings to control computation time.")
       ),
       shiny::numericInput(ns("alpha"), label = "Significance level (alpha)", value = 0.05, min = 0.0001, max = 0.25, step = 0.01),
-      shiny::actionButton(ns("apply_settings"), label = "Run analysis", class = "btn-primary")
+      shiny::actionButton(ns("run_analysis"), label = "Run analysis", class = "btn-primary")
     ),
     bslib::layout_column_wrap(
       width = 1,
@@ -171,10 +171,15 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
       }
 
       settings <- shiny::eventReactive(
-        input$apply_settings,
+        input$run_analysis,
         collect_settings(),
         ignoreNULL = FALSE
       )
+
+      run_counter <- shiny::reactiveVal(0L)
+      observeEvent(input$run_analysis, {
+        run_counter(run_counter() + 1L)
+      }, ignoreNULL = FALSE)
 
       data_dims <- shiny::reactive({
         if (is.null(processed_data)) {
@@ -234,7 +239,10 @@ mod_analysis_settings_server <- function(id, processed_data = NULL) {
         cat("Alpha:", format(opts$alpha, digits = 3), "\n")
       })
 
-      list(settings = settings)
+      list(
+        settings = settings,
+        run_analysis = shiny::reactive(run_counter())
+      )
     }
   )
 }
