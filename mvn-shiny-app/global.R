@@ -4,8 +4,16 @@ if (!requireNamespace("shiny", quietly = TRUE)) {
 
 library(shiny)
 
+if (!requireNamespace("bslib", quietly = TRUE)) {
+  stop("The 'bslib' package is required to run this application.")
+}
+
 if (!requireNamespace("MVN", quietly = TRUE)) {
   stop("The 'MVN' package must be installed to run this application.")
+}
+
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  stop("The 'ggplot2' package is required to run this application.")
 }
 
 library(MVN)
