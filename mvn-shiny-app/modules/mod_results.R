@@ -228,6 +228,8 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
   shiny::moduleServer(
     id,
     function(input, output, session) {
+      ns <- session$ns
+      
       analysis_result <- shiny::reactiveVal(NULL)
       analysis_needs_run <- shiny::reactiveVal(TRUE)
       analysis_in_progress <- shiny::reactiveVal(FALSE)
@@ -265,8 +267,12 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
       }
 
       run_mvn_analysis <- function(prepared, opts) {
+        df <- as.data.frame(prepared$data)
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        df <- df[, numeric_cols, drop = FALSE]
+        
         MVN::mvn(
-          data = prepared$data,
+          data = df,
           subset = prepared$group,
           mvn_test = opts$mvn_test,
           univariate_test = opts$univariate_test,
@@ -280,7 +286,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           tidy = TRUE
         )
       }
-
+      
       execute_analysis <- function(prepared, opts, asynchronous = FALSE) {
         analysis_result(NULL)
         analysis_in_progress(TRUE)
@@ -290,21 +296,32 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           run_mvn_analysis(prepared, opts)
         }
 
+        # if (!isTRUE(asynchronous)) {
+        #   result <- NULL
+        #   tryCatch({
+        #     shiny::withProgress(message = "Running analysis...", {
+        #       result <<- run_call()
+        #     })
+        #   }, error = function(e) {
+        #     shiny::showNotification(paste("Analysis failed:", e$message), type = "error")
+        #     result <<- NULL
+        #   })
+        #   analysis_result(result)
+        #   analysis_in_progress(FALSE)
+        #   analysis_needs_run(is.null(result))
+        #   return(invisible(NULL))
+        # }
+        
         if (!isTRUE(asynchronous)) {
-          result <- NULL
-          tryCatch({
-            shiny::withProgress(message = "Running analysis...", {
-              result <<- run_call()
-            })
-          }, error = function(e) {
-            shiny::showNotification(paste("Analysis failed:", e$message), type = "error")
-            result <<- NULL
+          shiny::withProgress(message = "Running analysis...", {
+            result <- run_call()   # hata olursa Shiny konsoluna düşecek
           })
           analysis_result(result)
           analysis_in_progress(FALSE)
           analysis_needs_run(is.null(result))
           return(invisible(NULL))
         }
+        
 
         detail_message <- sprintf(
           "Running %d bootstrap replicate%s using %d core%s.",
@@ -350,12 +367,10 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
 
       analysis_trigger <- shiny::reactive({
         current_settings <- settings()
-        if (is.null(run_analysis)) {
-          list(settings = current_settings)
-        } else {
-          list(settings = current_settings, trigger = run_analysis())
-        }
+        trigger_val <- if (!is.null(run_analysis)) run_analysis() else NULL
+        list(settings = current_settings, trigger = trigger_val)
       })
+      
 
       shiny::observeEvent(analysis_trigger(), {
         opts <- settings()
@@ -1099,7 +1114,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
       output$analysis_summary <- shiny::renderPrint({
         res <- analysis_result()
         shiny::req(res)
-        MVN::summary(res, select = "mvn")
+        summary(res, select = "mvn")
       })
 
       list(result = analysis_result)
