@@ -805,7 +805,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis Q-Q plot"),
-            ggplot2::plotOutput(ns("multivariate_qq"), height = "320px")
+            shiny::plotOutput(ns("multivariate_qq"), height = "320px")
           ),
           shiny::div(
             class = "visual-block",
@@ -883,25 +883,20 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
       })
 
-      output$multivariate_qq <- ggplot2::renderPlot({
+      output$multivariate_qq <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         df <- get_numeric_data(res)
         shiny::req(df)
         shiny::req(ncol(df) >= 2, nrow(df) >= 3)
-        center <- colMeans(df)
-        cov_mat <- stats::cov(df)
-        distances <- tryCatch(stats::mahalanobis(df, center, cov_mat), error = function(e) NULL)
-        shiny::validate(shiny::need(!is.null(distances), "Unable to compute Mahalanobis distances for the current dataset."))
-        distances <- sort(distances)
-        theoretical <- stats::qchisq(stats::ppoints(length(distances)), df = ncol(df))
-        plot_df <- data.frame(expected = theoretical, observed = distances)
-        ggplot2::ggplot(plot_df, ggplot2::aes(x = expected, y = observed)) +
-          ggplot2::geom_point(color = "#1d3557", alpha = 0.75, size = 2.5) +
-          ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "#2a9d8f", linewidth = 1) +
-          ggplot2::labs(x = "Chi-square quantiles", y = "Squared Mahalanobis distance") +
-          ggplot2::theme_minimal(base_size = 13) +
-          ggplot2::theme(panel.grid.minor = ggplot2::element_blank())
+        plot_obj <- tryCatch(
+          MVN::multivariate_diagnostic_plot(df, type = "qq"),
+          error = function(e) {
+            shiny::validate(shiny::need(FALSE, paste("Unable to generate Mahalanobis Q-Q plot:", e$message)))
+          }
+        )
+        shiny::validate(shiny::need(!is.null(plot_obj), "Mahalanobis Q-Q plot is unavailable for the current dataset."))
+        plot_obj
       })
 
       `%||%` <- function(x, y) {
@@ -926,12 +921,12 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Histograms with normal curve"),
-            ggplot2::plotOutput(ns("univariate_hist"), height = plot_height)
+            shiny::plotOutput(ns("univariate_hist"), height = plot_height)
           ),
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Q-Q plots by variable"),
-            ggplot2::plotOutput(ns("univariate_qq"), height = plot_height)
+            shiny::plotOutput(ns("univariate_qq"), height = plot_height)
           ),
           shiny::div(
             class = "visual-block",
@@ -946,7 +941,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
       })
 
-      output$univariate_hist <- ggplot2::renderPlot({
+      output$univariate_hist <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -954,7 +949,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         MVN::univariate_diagnostic_plot(data, type = "histogram", title = "Histograms with normal overlay")
       })
 
-      output$univariate_qq <- ggplot2::renderPlot({
+      output$univariate_qq <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -1025,16 +1020,21 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           return(shiny::div(class = "alert alert-warning", "Select numeric variables to review outlier diagnostics."))
         }
         info <- summary_info()
+        outlier_plot_title <- if (!is.null(info) && !is.null(info$outlier_label)) {
+          paste(info$outlier_label, "Q-Q plot")
+        } else {
+          "Outlier Q-Q plot"
+        }
         shiny::tagList(
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Variable boxplots"),
-            ggplot2::plotOutput(ns("outlier_boxplot"), height = compute_plot_height(ncol(numeric_data)))
+            shiny::plotOutput(ns("outlier_boxplot"), height = compute_plot_height(ncol(numeric_data)))
           ),
           shiny::div(
             class = "visual-block",
-            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis distance"),
-            ggplot2::plotOutput(ns("outlier_distance_plot"), height = "320px")
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", outlier_plot_title),
+            shiny::plotOutput(ns("outlier_distance_plot"), height = "320px")
           ),
           shiny::div(
             class = "visual-block",
@@ -1044,12 +1044,12 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::tags$details(
             shiny::tags$summary("Interpretation notes"),
             shiny::tags$p(sprintf("Outlier detection uses the %s method.", info$outlier_label)),
-            shiny::tags$p("Review the distance plot for points exceeding the reference line and examine flagged cases below.")
+            shiny::tags$p("Review the Q-Q plot for points deviating from the reference line and examine flagged cases below.")
           )
         )
       })
 
-      output$outlier_boxplot <- ggplot2::renderPlot({
+      output$outlier_boxplot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -1057,46 +1057,30 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         MVN::univariate_diagnostic_plot(data, type = "boxplot", title = "Boxplots by variable")
       })
 
-      output$outlier_distance_plot <- ggplot2::renderPlot({
+      output$outlier_distance_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         df <- get_numeric_data(res)
         shiny::req(df)
         shiny::req(ncol(df) >= 2)
-        center <- colMeans(df)
-        cov_mat <- stats::cov(df)
-        distances <- tryCatch(stats::mahalanobis(df, center, cov_mat), error = function(e) NULL)
-        shiny::validate(shiny::need(!is.null(distances), "Unable to compute Mahalanobis distances for the current dataset."))
-        labels <- rownames(df)
-        if (is.null(labels) || !length(labels)) {
-          labels <- seq_len(nrow(df))
-        }
-        distance_df <- data.frame(
-          Observation = seq_along(distances),
-          Label = labels,
-          Distance = distances,
-          stringsAsFactors = FALSE
-        )
-        flagged_tbl <- res$multivariate_outliers
-        flagged_ids <- character(0)
-        if (!is.null(flagged_tbl)) {
-          flagged_df <- as.data.frame(flagged_tbl)
-          if ("Observation" %in% names(flagged_df)) {
-            flagged_ids <- as.character(flagged_df$Observation[flagged_df$Outlier %in% c(TRUE, "TRUE")])
+        opts <- settings()
+        shiny::req(opts)
+        method <- opts$outlier_method %||% "quan"
+        alpha <- opts$alpha %||% 0.05
+        plot_result <- tryCatch(
+          MVN::mv_outlier(
+            df,
+            method = method,
+            alpha = alpha,
+            outlier = FALSE
+          ),
+          error = function(e) {
+            shiny::validate(shiny::need(FALSE, paste("Unable to generate outlier diagnostics plot:", e$message)))
           }
-        }
-        distance_df$Flagged <- ifelse(distance_df$Label %in% flagged_ids, "Flagged", "Observed")
-        info <- summary_info()
-        cutoff <- stats::qchisq(1 - info$alpha, df = ncol(df))
-        distance_df$Flagged <- factor(distance_df$Flagged, levels = c("Observed", "Flagged"))
-        ggplot2::ggplot(distance_df, ggplot2::aes(x = Observation, y = Distance, color = Flagged)) +
-          ggplot2::geom_line(alpha = 0.4, color = "#adb5bd") +
-          ggplot2::geom_point(size = 2.5) +
-          ggplot2::geom_hline(yintercept = cutoff, linetype = "dashed", color = "#d62828") +
-          ggplot2::scale_color_manual(values = c("Observed" = "#264653", "Flagged" = "#d62828")) +
-          ggplot2::labs(x = "Observation index", y = "Mahalanobis distance") +
-          ggplot2::theme_minimal(base_size = 13) +
-          ggplot2::theme(legend.position = "top", panel.grid.minor = ggplot2::element_blank())
+        )
+        plot_obj <- plot_result$qq_outlier_plot
+        shiny::validate(shiny::need(!is.null(plot_obj), "Outlier diagnostics plot is unavailable for the current dataset."))
+        plot_obj
       })
 
       output$outlier_table <- shiny::renderUI({
