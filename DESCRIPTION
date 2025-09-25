@@ -32,8 +32,14 @@ Imports:
     mice
 Suggests:
     DT,
+    bslib,
+    future,
+    haven,
     jsonlite,
-    yaml
+    readxl,
+    shiny,
+    yaml,
+    promises
 Collate:
     'mvn.R'
     'mardia.R'
@@ -52,6 +58,7 @@ Collate:
     'plot.mvn.R'
     'summary.mvn.R'
     'impute_missing.R'
+    'run_mvn_app.R'
 Description:
     A comprehensive suite for assessing multivariate normality using six statistical tests 
     (Mardia, Henze–Zirkler, Henze–Wagner, Royston, Doornik–Hansen, Energy). 

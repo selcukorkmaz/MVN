@@ -98,6 +98,12 @@ mvn(data = iris, subset = "Species", mvn_test = "hz")
 Explore MVN’s features via a user-friendly web interface:
 http://biosoft.erciyes.edu.tr/app/MVN
 
+To launch the Shiny app locally from the MVN package, run:
+
+```r
+MVN::run_mvn_app()
+```
+
 
 ## Documentation and Tutorial
 
