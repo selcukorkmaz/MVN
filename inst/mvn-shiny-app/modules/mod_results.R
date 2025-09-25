@@ -1179,7 +1179,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis Q-Q plot"),
-            shiny::plotOutput(ns("multivariate_qq"), height = "320px")
+            shiny::uiOutput(ns("multivariate_qq_panel"))
           ),
           shiny::tags$details(
             shiny::tags$summary("Interpretation notes"),
@@ -1252,7 +1252,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
       })
 
-      output$multivariate_qq <- shiny::renderPlot({
+      output$multivariate_qq_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         df <- get_numeric_data(res)
@@ -1266,6 +1266,62 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
         shiny::validate(shiny::need(!is.null(plot_obj), "Mahalanobis Q-Q plot is unavailable for the current dataset."))
         plot_obj
+      })
+
+      output$multivariate_qq_panel <- shiny::renderUI({
+        res <- analysis_result()
+        shiny::req(res)
+        numeric_data <- get_numeric_data(res)
+        shiny::req(numeric_data)
+        shiny::req(ncol(numeric_data) >= 2)
+        groups <- grouped_numeric_data()
+        plot_height <- "320px"
+        if (is.null(groups) || !length(groups)) {
+          return(shiny::plotOutput(ns("multivariate_qq_plot"), height = plot_height))
+        }
+        valid_groups <- Filter(function(entry) {
+          is.list(entry) &&
+            !is.null(entry$data) &&
+            is.data.frame(entry$data) &&
+            nrow(entry$data) >= 3 &&
+            ncol(entry$data) >= 2
+        }, groups)
+        if (!length(valid_groups)) {
+          return(shiny::plotOutput(ns("multivariate_qq_plot"), height = plot_height))
+        }
+        group_ui <- lapply(valid_groups, function(entry) {
+          safe_id <- paste(entry$key, sanitize_for_id(entry$label), sep = "_")
+          plot_id <- paste0("multivariate_qq_plot_", safe_id)
+          local({
+            id <- plot_id
+            key <- entry$key
+            output[[id]] <- shiny::renderPlot({
+              groups_latest <- grouped_numeric_data()
+              shiny::req(groups_latest)
+              entry_latest <- groups_latest[[key]]
+              shiny::req(entry_latest)
+              df_group <- entry_latest$data
+              shiny::req(ncol(df_group) >= 2, nrow(df_group) >= 3)
+              plot_obj <- tryCatch(
+                MVN::multivariate_diagnostic_plot(df_group, type = "qq"),
+                error = function(e) {
+                  shiny::validate(shiny::need(FALSE, paste("Unable to generate Mahalanobis Q-Q plot:", e$message)))
+                }
+              )
+              shiny::validate(shiny::need(!is.null(plot_obj), "Mahalanobis Q-Q plot is unavailable for this subgroup."))
+              plot_obj
+            })
+          })
+          shiny::tags$div(
+            class = "grouped-plot-block",
+            shiny::tags$span(
+              class = "grouped-plot-label",
+              htmltools::htmlEscape(paste("Group:", entry$label))
+            ),
+            shiny::plotOutput(ns(plot_id), height = plot_height)
+          )
+        })
+        shiny::tags$div(class = "grouped-plot-stack", group_ui)
       })
 
       `%||%` <- function(x, y) {
@@ -1480,7 +1536,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", outlier_plot_title),
-            shiny::plotOutput(ns("outlier_distance_plot"), height = "320px")
+            shiny::uiOutput(ns("outlier_distance_panel"))
           ),
           shiny::div(
             class = "visual-block",
@@ -1519,6 +1575,72 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         plot_obj <- plot_result$qq_outlier_plot
         shiny::validate(shiny::need(!is.null(plot_obj), "Outlier diagnostics plot is unavailable for the current dataset."))
         plot_obj
+      })
+
+      output$outlier_distance_panel <- shiny::renderUI({
+        res <- analysis_result()
+        shiny::req(res)
+        numeric_data <- get_numeric_data(res)
+        shiny::req(numeric_data)
+        shiny::req(ncol(numeric_data) >= 2)
+        groups <- grouped_numeric_data()
+        plot_height <- "320px"
+        if (is.null(groups) || !length(groups)) {
+          return(shiny::plotOutput(ns("outlier_distance_plot"), height = plot_height))
+        }
+        valid_groups <- Filter(function(entry) {
+          is.list(entry) &&
+            !is.null(entry$data) &&
+            is.data.frame(entry$data) &&
+            nrow(entry$data) >= 2 &&
+            ncol(entry$data) >= 2
+        }, groups)
+        if (!length(valid_groups)) {
+          return(shiny::plotOutput(ns("outlier_distance_plot"), height = plot_height))
+        }
+        opts <- settings()
+        shiny::req(opts)
+        method <- opts$outlier_method %||% "quan"
+        alpha <- opts$alpha %||% 0.05
+        group_ui <- lapply(valid_groups, function(entry) {
+          safe_id <- paste(entry$key, sanitize_for_id(entry$label), sep = "_")
+          plot_id <- paste0("outlier_distance_plot_", safe_id)
+          local({
+            id <- plot_id
+            key <- entry$key
+            output[[id]] <- shiny::renderPlot({
+              groups_latest <- grouped_numeric_data()
+              shiny::req(groups_latest)
+              entry_latest <- groups_latest[[key]]
+              shiny::req(entry_latest)
+              df_group <- entry_latest$data
+              shiny::req(ncol(df_group) >= 2)
+              plot_result <- tryCatch(
+                MVN::mv_outlier(
+                  df_group,
+                  method = method,
+                  alpha = alpha,
+                  outlier = FALSE
+                ),
+                error = function(e) {
+                  shiny::validate(shiny::need(FALSE, paste("Unable to generate outlier diagnostics plot:", e$message)))
+                }
+              )
+              plot_obj <- plot_result$qq_outlier_plot
+              shiny::validate(shiny::need(!is.null(plot_obj), "Outlier diagnostics plot is unavailable for this subgroup."))
+              plot_obj
+            })
+          })
+          shiny::tags$div(
+            class = "grouped-plot-block",
+            shiny::tags$span(
+              class = "grouped-plot-label",
+              htmltools::htmlEscape(paste("Group:", entry$label))
+            ),
+            shiny::plotOutput(ns(plot_id), height = plot_height)
+          )
+        })
+        shiny::tags$div(class = "grouped-plot-stack", group_ui)
       })
 
       output$outlier_table <- shiny::renderUI({
