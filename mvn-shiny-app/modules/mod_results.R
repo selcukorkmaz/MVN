@@ -199,15 +199,15 @@ mod_results_ui <- function(id) {
         shiny::uiOutput(ns("outlier_content"))
       )
     ),
-    bslib::accordion(
-      id = ns("results_details"),
-      open = character(0),
-      bslib::accordion_panel(
-        title = "Analysis details",
-        value = "analysis-details",
-        shiny::verbatimTextOutput(ns("analysis_summary"))
-      )
-    )
+    # bslib::accordion(
+    #   id = ns("results_details"),
+    #   open = character(0),
+    #   bslib::accordion_panel(
+    #     title = "Analysis details",
+    #     value = "analysis-details",
+    #     shiny::verbatimTextOutput(ns("analysis_summary"))
+    #   )
+    # )
   )
 }
 
@@ -814,18 +814,13 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         shiny::tagList(
           shiny::div(
             class = "visual-block",
-            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Scatter overview"),
-            plotly::plotlyOutput(ns("multivariate_scatter"), height = "340px")
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
+            shiny::uiOutput(ns("multivariate_table"))
           ),
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Mahalanobis Q-Q plot"),
             shiny::plotOutput(ns("multivariate_qq"), height = "320px")
-          ),
-          shiny::div(
-            class = "visual-block",
-            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
-            shiny::uiOutput(ns("multivariate_table"))
           ),
           shiny::tags$details(
             shiny::tags$summary("Interpretation notes"),
@@ -834,11 +829,11 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
               info$test_label,
               format(info$alpha, digits = 3)
             )),
-            shiny::tags$p("Use the plots above to assess the overall fit and investigate any patterns before reviewing the numerical tests.")
+            shiny::tags$p("Use the Q-Q plot to assess the overall fit before reviewing the numerical tests.")
           )
         )
       })
-
+      
       output$multivariate_table <- shiny::renderUI({
         res <- analysis_result()
         shiny::req(res)
@@ -1111,11 +1106,11 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         }
         build_results_table(df, alpha = 0.05, highlight_p = FALSE, badge_columns = c("Outlier"))
       })
-      output$analysis_summary <- shiny::renderPrint({
-        res <- analysis_result()
-        shiny::req(res)
-        summary(res, select = "mvn")
-      })
+      # output$analysis_summary <- shiny::renderPrint({
+      #   res <- analysis_result()
+      #   shiny::req(res)
+      #   summary(res, select = "mvn")
+      # })
 
       list(result = analysis_result)
     }
