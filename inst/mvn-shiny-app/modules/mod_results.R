@@ -498,9 +498,19 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
 
       run_mvn_analysis <- function(prepared, opts) {
         df <- as.data.frame(prepared$data)
+        group <- prepared$group
+
+        # Ensure only the numeric variables (and optional grouping variable) are
+        # passed to the MVN::mvn() call. The grouping column must remain in the
+        # data so that the subset argument can be resolved correctly.
         numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
-        df <- df[, numeric_cols, drop = FALSE]
-        
+        keep_cols <- if (is.null(group)) {
+          numeric_cols
+        } else {
+          unique(c(numeric_cols, group))
+        }
+        df <- df[, keep_cols, drop = FALSE]
+
         MVN::mvn(
           data = df,
           subset = prepared$group,
