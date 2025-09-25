@@ -258,6 +258,14 @@ mod_results_ui <- function(id) {
     ".badge-decision.bg-warning {",
     "  color: #343a40;",
     "}",
+    ".badge-decision.badge-decision-mixed {",
+    "  background-color: #0a6ebd;",
+    "  color: #ffffff;",
+    "}",
+    ".badge-decision .fa,",
+    ".badge-decision .fas {",
+    "  color: inherit;",
+    "}",
     ".visual-block {",
     "  margin-bottom: 1.25rem;",
     "}",
@@ -742,16 +750,16 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
 
       classify_decision <- function(p, alpha) {
         if (is.null(p) || !is.finite(p)) {
-          return(list(status = "unknown", class = "badge-decision bg-secondary text-white", icon = "\u2139\ufe0f", label = "Review details"))
+          return(list(status = "unknown", class = "badge-decision bg-secondary text-white", icon = shiny::icon("info-circle"), label = "Review details"))
         }
         tolerance <- max(0.005, alpha * 0.1)
         if (abs(p - alpha) <= tolerance) {
-          return(list(status = "borderline", class = "badge-decision bg-warning text-dark", icon = "\u26a0\ufe0f", label = "Borderline"))
+          return(list(status = "borderline", class = "badge-decision bg-warning text-dark", icon = shiny::icon("exclamation-triangle"), label = "Borderline"))
         }
         if (p < alpha) {
-          return(list(status = "not_normal", class = "badge-decision bg-danger text-white", icon = "\u274c", label = "Non-normal"))
+          return(list(status = "not_normal", class = "badge-decision bg-danger text-white", icon = shiny::icon("times-circle"), label = "Non-normal"))
         }
-        list(status = "normal", class = "badge-decision bg-success text-white", icon = "\u2705", label = "Normal")
+        list(status = "normal", class = "badge-decision bg-success text-white", icon = shiny::icon("check-circle"), label = "Normal")
       }
 
       build_spread_bar <- function(min_val, max_val, mean_val, sd_val) {
@@ -1149,8 +1157,8 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
                       } else {
                         decision_overall <- list(
                           status = "mixed",
-                          class = "badge-decision bg-info text-dark",
-                          icon = "\ud83d\udd00",
+                          class = "badge-decision badge-decision-mixed",
+                          icon = shiny::icon("random"),
                           label = "Mixed results"
                         )
                       }
@@ -1158,7 +1166,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
                       decision_overall <- list(
                         status = "unknown",
                         class = "badge-decision bg-secondary text-white",
-                        icon = "\u2139\ufe0f",
+                        icon = shiny::icon("info-circle"),
                         label = "Review details"
                       )
                     }
