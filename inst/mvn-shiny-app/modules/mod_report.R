@@ -6,28 +6,29 @@ mod_report_ui <- function(id) {
       bslib::card_header("Export"),
       shiny::textInput(ns("base_name"), label = "Base file name", value = "mvn_analysis"),
       shiny::div(
-        class = "d-grid gap-2",
+        class = "d-grid gap-3",
+        shiny::tags$div(
+          class = "text-uppercase text-muted fw-semibold small",
+          "Prepared data"
+        ),
         shiny::downloadButton(ns("download_data"), label = "Prepared data (CSV)", class = "btn-primary"),
-        shiny::downloadButton(ns("download_results"), label = "Analysis object (RDS)", class = "btn-outline-primary"),
-        shiny::downloadButton(ns("download_results_csv"), label = "Analysis tables (CSV)", class = "btn-outline-secondary"),
-        shiny::downloadButton(ns("download_parameters_yaml"), label = "Parameters (YAML)", class = "btn-outline-secondary"),
-        shiny::downloadButton(ns("download_parameters_json"), label = "Parameters (JSON)", class = "btn-outline-secondary"),
-        shiny::downloadButton(ns("download_rmd_template"), label = "R Markdown template", class = "btn-outline-secondary")
+        shiny::tags$div(
+          class = "text-uppercase text-muted fw-semibold small",
+          "Analysis tables"
+        ),
+        shiny::downloadButton(ns("download_tables_zip"), label = "All tables (ZIP)", class = "btn-outline-secondary"),
+        shiny::tags$div(
+          class = "text-uppercase text-muted fw-semibold small",
+          "Analysis plots"
+        ),
+        shiny::downloadButton(ns("download_plots_zip"), label = "All plots (ZIP)", class = "btn-outline-secondary")
       )
     ),
     bslib::layout_column_wrap(
       width = 1,
       bslib::card(
-        bslib::card_header("Workflow summary"),
-        shiny::uiOutput(ns("parameter_log"))
-      ),
-      bslib::card(
-        bslib::card_header("Analysis snapshot"),
-        shiny::uiOutput(ns("report_summary"))
-      ),
-      bslib::card(
-        bslib::card_header("Multivariate test table"),
-        shiny::tableOutput(ns("report_table"))
+        bslib::card_header("Analysis R code"),
+        shiny::uiOutput(ns("analysis_code"))
       )
     )
   )
@@ -49,386 +50,550 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         gsub("\\s+", "_", trimws(name))
       })
 
-      extract_p_value <- function(tbl) {
-        if (is.null(tbl)) {
-          return(list(display = "\u2014", numeric = NA_real_))
+      sanitize_for_filename <- function(x) {
+        if (is.null(x) || !length(x)) {
+          return("value")
         }
-        df <- as.data.frame(tbl)
-        if (!nrow(df)) {
-          return(list(display = "\u2014", numeric = NA_real_))
-        }
-        p_col <- intersect(c("p.value", "p_value", "pvalue", "p.value.skew"), names(df))
-        if (!length(p_col)) {
-          return(list(display = "\u2014", numeric = NA_real_))
-        }
-        raw_value <- df[[p_col[1]]][1]
-        if (length(raw_value) == 0) {
-          return(list(display = "\u2014", numeric = NA_real_))
-        }
-        display <- if (is.numeric(raw_value)) {
-          formatC(raw_value, digits = 3, format = "g")
-        } else {
-          as.character(raw_value)
-        }
-        numeric_value <- suppressWarnings(as.numeric(raw_value))
-        if (!is.finite(numeric_value) && is.character(raw_value)) {
-          if (grepl("^\\s*<", raw_value)) {
-            numeric_value <- suppressWarnings(as.numeric(sub("^\\s*<\\s*", "", raw_value)))
-          } else if (grepl("^\\s*>", raw_value)) {
-            numeric_value <- suppressWarnings(as.numeric(sub("^\\s*>\\s*", "", raw_value)))
-          }
-        }
-        list(
-          display = if (is.null(display) || !nzchar(display)) "\u2014" else display,
-          numeric = numeric_value
-        )
+        value <- tolower(paste(x, collapse = "_"))
+        value <- gsub("[^A-Za-z0-9]+", "-", value)
+        value <- gsub("-+", "-", value)
+        value <- gsub("^-+|-+$", "", value)
+        if (!nzchar(value)) "value" else value
       }
 
-      build_analysis_csv <- function(res) {
-        tables <- list(
-          multivariate_tests = res$multivariate_normality,
-          univariate_tests = res$univariate_normality,
-          descriptives = res$descriptives,
-          multivariate_outliers = res$multivariate_outliers,
-          cleaned_data = res$new_data
-        )
-        tables <- tables[!vapply(tables, is.null, logical(1))]
-        if (!length(tables)) {
+      format_group_label <- function(value) {
+        if (is.null(value) || length(value) == 0) {
+          return("Missing")
+        }
+        value <- value[1]
+        if (is.na(value)) {
+          return("Missing")
+        }
+        if (is.factor(value)) {
+          value <- as.character(value)
+        }
+        formatted <- if (inherits(value, c("POSIXt", "Date"))) {
+          format(value)
+        } else if (is.numeric(value)) {
+          format(value, trim = TRUE, scientific = FALSE)
+        } else {
+          as.character(value)
+        }
+        formatted <- trimws(formatted)
+        if (!nzchar(formatted)) "Missing" else formatted
+      }
+
+      get_numeric_data <- function(res) {
+        if (is.null(res)) {
           return(NULL)
         }
-        combined <- lapply(names(tables), function(name) {
-          df <- as.data.frame(tables[[name]])
-          if (!nrow(df)) {
-            return(NULL)
-          }
-          rows <- seq_len(nrow(df))
-          columns <- names(df)
-          column_frames <- lapply(columns, function(col) {
-            values <- df[[col]]
-            data.frame(
-              table = name,
-              row = rows,
-              column = col,
-              value = as.character(values),
-              stringsAsFactors = FALSE
-            )
-          })
-          do.call(rbind, column_frames)
-        })
-        combined <- Filter(Negate(is.null), combined)
-        if (!length(combined)) {
+        data <- res$data
+        if (is.null(data)) {
           return(NULL)
         }
-        result <- do.call(rbind, combined)
-        rownames(result) <- NULL
-        result
+        df <- as.data.frame(data)
+        group <- res$subset
+        if (!is.null(group) && nzchar(group) && group %in% names(df)) {
+          df[[group]] <- NULL
+        }
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        if (!length(numeric_cols)) {
+          return(NULL)
+        }
+        df[, numeric_cols, drop = FALSE]
       }
 
-      collect_parameters <- function() {
-        opts <- settings()
-        params <- list()
-        if (!is.null(opts)) {
-          params$tests <- list(
-            mvn_test = opts$mvn_test,
-            mvn_test_label = opts$test_label,
-            univariate_test = opts$univariate_test,
-            univariate_test_label = opts$univariate_label,
-            outlier_method = opts$outlier_method,
-            outlier_method_label = opts$outlier_label
+      get_group_values <- function(res) {
+        group <- res$subset
+        if (is.null(group) || !nzchar(group)) {
+          return(NULL)
+        }
+        data <- res$data
+        if (is.null(data)) {
+          return(NULL)
+        }
+        df <- as.data.frame(data)
+        if (!(group %in% names(df))) {
+          return(NULL)
+        }
+        df[[group]]
+      }
+
+      get_grouped_numeric_data <- function(res) {
+        if (is.null(res)) {
+          return(NULL)
+        }
+        data <- res$data
+        if (is.null(data)) {
+          return(NULL)
+        }
+        df <- as.data.frame(data)
+        group <- res$subset
+        if (is.null(group) || !nzchar(group) || !(group %in% names(df))) {
+          return(NULL)
+        }
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        numeric_cols <- setdiff(numeric_cols, group)
+        if (!length(numeric_cols)) {
+          return(NULL)
+        }
+        group_vals <- df[[group]]
+        unique_vals <- unique(group_vals)
+        if (!length(unique_vals)) {
+          return(NULL)
+        }
+        entries <- list()
+        counter <- 0L
+        for (val in unique_vals) {
+          if (is.na(val)) {
+            mask <- is.na(group_vals)
+            label <- "Missing"
+          } else {
+            mask <- group_vals == val
+            label <- format_group_label(val)
+          }
+          subset_df <- df[mask, numeric_cols, drop = FALSE]
+          if (!nrow(subset_df) || !ncol(subset_df)) {
+            next
+          }
+          counter <- counter + 1L
+          key <- sprintf("group_%03d", counter)
+          entries[[key]] <- list(
+            key = key,
+            label = label,
+            data = subset_df
           )
-          params$significance <- list(alpha = opts$alpha)
-          params$descriptives <- isTRUE(opts$descriptives)
-          params$bootstrap <- list(
-            enabled = isTRUE(opts$bootstrap),
-            replicates = opts$B,
-            cores = opts$cores
-          )
         }
-
-        res <- analysis_result()
-        if (!is.null(res)) {
-          dataset_info <- list()
-          data <- res$data
-          if (!is.null(data)) {
-            data <- as.data.frame(data)
-            group <- res$subset
-            if (is.null(group) || !nzchar(group) || !(group %in% names(data))) {
-              group <- NULL
-            }
-            numeric_cols <- names(data)[vapply(data, is.numeric, logical(1))]
-            if (!is.null(group)) {
-              numeric_cols <- setdiff(numeric_cols, group)
-            }
-            dataset_info$observations <- nrow(data)
-            dataset_info$numeric_variables <- length(numeric_cols)
-            if (!is.null(group)) {
-              dataset_info$grouping_variable <- group
-              dataset_info$group_levels <- length(unique(data[[group]][!is.na(data[[group]])]))
-            }
-          }
-          outlier_tbl <- res$multivariate_outliers
-          dataset_info$outliers_flagged <- if (is.null(outlier_tbl)) 0L else nrow(as.data.frame(outlier_tbl))
-          if (!is.null(res$new_data)) {
-            dataset_info$cleaned_observations <- nrow(as.data.frame(res$new_data))
-          }
-          if (length(dataset_info)) {
-            params$dataset <- dataset_info
-          }
-          if (!is.null(opts)) {
-            p_info <- extract_p_value(res$multivariate_normality)
-            params$decision <- list(
-              alpha = opts$alpha,
-              p_value = p_info$numeric,
-              p_value_display = p_info$display,
-              normal = if (!is.null(p_info$numeric) && is.finite(p_info$numeric)) p_info$numeric >= opts$alpha else NULL
-            )
-          }
+        if (!length(entries)) {
+          return(NULL)
         }
-
-        workflow <- list(
-          base_file_name = base_name(),
-          generated_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-        )
-        mvn_version <- tryCatch(as.character(utils::packageVersion("MVN")), error = function(e) NULL)
-        if (!is.null(mvn_version)) {
-          workflow$app_version <- mvn_version
-        }
-        params$workflow <- workflow
-
-        params
+        entries
       }
 
-      format_label <- function(value) {
-        label <- gsub("_", " ", as.character(value))
-        tools::toTitleCase(label)
-      }
-
-      format_parameter_value <- function(value) {
-        if (is.null(value)) {
-          return("\u2014")
-        }
-        if (inherits(value, c("POSIXct", "POSIXt", "Date"))) {
-          return(as.character(value))
-        }
-        if (is.logical(value)) {
-          return(paste(ifelse(value, "Yes", "No"), collapse = ", "))
-        }
-        if (is.numeric(value)) {
-          return(paste(format(value, digits = 3, trim = TRUE), collapse = ", "))
-        }
-        if (length(value) > 1) {
-          return(paste(as.character(value), collapse = ", "))
-        }
-        as.character(value)
-      }
-
-      flatten_parameters <- function(x, path = character()) {
-        rows <- list()
-        if (is.list(x) && length(x)) {
-          nms <- names(x)
-          if (is.null(nms)) {
-            nms <- as.character(seq_along(x))
-          }
-          for (idx in seq_along(x)) {
-            child <- x[[idx]]
-            child_name <- nms[[idx]]
-            rows <- c(rows, flatten_parameters(child, c(path, child_name)))
-          }
-          return(rows)
-        }
-        section <- if (length(path) > 1) {
-          paste(vapply(path[-length(path)], format_label, character(1)), collapse = " \u203a ")
-        } else {
-          "General"
-        }
-        parameter <- if (length(path)) format_label(path[length(path)]) else "Value"
-        rows[[1]] <- list(section = section, parameter = parameter, value = format_parameter_value(x))
-        rows
-      }
-
-      build_parameter_table <- function(params) {
-        rows <- flatten_parameters(params)
-        rows <- Filter(length, rows)
-        if (!length(rows)) {
-          return(shiny::div(class = "text-muted", "Adjust analysis settings and run the workflow to capture parameters."))
-        }
-        df <- do.call(rbind, lapply(rows, function(row) {
-          data.frame(row, stringsAsFactors = FALSE, check.names = FALSE)
-        }))
-        df$section[df$section == ""] <- "General"
-        table_rows <- apply(df, 1, function(row) {
-          shiny::tags$tr(
-            shiny::tags$td(row[["section"]]),
-            shiny::tags$td(row[["parameter"]]),
-            shiny::tags$td(row[["value"]])
-          )
-        })
-        shiny::tags$table(
-          class = "table table-sm table-hover mb-0",
-          shiny::tags$thead(
-            shiny::tags$tr(
-              shiny::tags$th("Section"),
-              shiny::tags$th("Parameter"),
-              shiny::tags$th("Value")
-            )
-          ),
-          shiny::tags$tbody(table_rows)
-        )
-      }
-
-      build_rmd_template <- function(base_file_name, params) {
-        params_code <- "list()"
-        if (!is.null(params) && length(params)) {
-          params_code <- capture.output(dput(params))
-        }
-        c(
-          "---",
-          "title: \"MVN Analysis Report\"",
-          "output:",
-          "  html_document:",
-          "    toc: true",
-          "    toc_depth: 2",
-          "---",
-          "",
-          "```{r setup, include=FALSE}",
-          "knitr::opts_chunk$set(echo = FALSE, message = FALSE)",
-          "library(MVN)",
-          "```",
-          "",
-          "## Workflow Summary",
-          "",
-          "This report template captures the configuration used in the MVN Shiny application.",
-          "",
-          "### Exported Files",
-          "",
-          paste0("- Prepared data: `", base_file_name, "_data.csv`"),
-          paste0("- Analysis object: `", base_file_name, "_analysis.rds`"),
-          paste0("- Analysis tables: `", base_file_name, "_analysis_tables.csv`"),
-          "",
-          "```{r load-data}",
-          paste0("prepared_data <- read.csv(\"", base_file_name, "_data.csv\")"),
-          paste0("analysis_object <- readRDS(\"", base_file_name, "_analysis.rds\")"),
-          "analysis_parameters <- ",
-          params_code,
-          "```",
-          "",
-          "## Inspect Parameters",
-          "",
-          "```{r display-parameters}",
-          "str(analysis_parameters)",
-          "```",
-          "",
-          "## Notes",
-          "",
-          "Summarise results, add plots, and include diagnostics in the sections below.",
-          ""
-        )
-      }
-
-      output$report_summary <- shiny::renderUI({
-        data <- processed_data()
+      build_analysis_code <- function() {
         res <- analysis_result()
         opts <- settings()
-
-        if (is.null(data) || is.null(res) || is.null(opts)) {
-          return(shiny::div(class = "text-muted", "Run the analysis to generate a report preview."))
+        data <- data_for_export()
+        if (is.null(res) || is.null(opts) || is.null(data)) {
+          return(NULL)
         }
 
-        data <- as.data.frame(data)
-        numeric_cols <- names(data)[vapply(data, is.numeric, logical(1))]
-        sample_n <- nrow(data)
-        sample_p <- length(numeric_cols)
-
-        analysis_df <- res$data
-        if (!is.null(analysis_df)) {
-          analysis_df <- as.data.frame(analysis_df)
-        } else {
-          analysis_df <- data
+        df <- res$data
+        if (is.null(df)) {
+          df <- data
         }
+        df <- as.data.frame(df)
 
         group <- res$subset
-        if (is.null(group) || !nzchar(group) || !(group %in% names(analysis_df))) {
+        if (is.null(group) || !nzchar(group) || !(group %in% names(df))) {
           group <- NULL
         }
 
-        test_name <- opts$test_label
-        if (is.null(test_name) || is.na(test_name)) {
-          test_name <- opts$mvn_test
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        if (!length(numeric_cols)) {
+          return(NULL)
+        }
+        if (!is.null(group)) {
+          numeric_cols <- setdiff(numeric_cols, group)
+        }
+        if (!length(numeric_cols)) {
+          return(NULL)
         }
 
-        p_info <- extract_p_value(res$multivariate_normality)
-        outlier_tbl <- res$multivariate_outliers
-        outlier_count <- if (is.null(outlier_tbl)) 0L else nrow(as.data.frame(outlier_tbl))
-        cleaned_rows <- if (!is.null(res$new_data)) nrow(as.data.frame(res$new_data)) else NULL
+        quote_vector <- function(x) {
+          if (!length(x)) {
+            return("character(0)")
+          }
+          quoted <- vapply(x, function(val) {
+            val <- gsub("\\\\", "\\\\\\\\", val)
+            val <- gsub("\"", "\\\\\"", val)
+            sprintf("\"%s\"", val)
+          }, character(1))
+          paste(quoted, collapse = ", ")
+        }
 
+        format_scalar <- function(x, digits = 6) {
+          if (is.null(x) || length(x) == 0) {
+            return("NA")
+          }
+          value <- suppressWarnings(as.numeric(x[1]))
+          if (!is.finite(value)) {
+            return("NA")
+          }
+          format(value, digits = digits, trim = TRUE)
+        }
+
+        dataset_file <- paste0(base_name(), "_data.csv")
+
+        code_lines <- c(
+          "# Load required package and the prepared dataset exported from the app",
+          "library(MVN)",
+          sprintf("prepared_data <- read.csv(\"%s\")", dataset_file),
+          "",
+          sprintf("numeric_vars <- c(%s)", quote_vector(numeric_cols))
+        )
+
+        if (!is.null(group)) {
+          code_lines <- c(
+            code_lines,
+            sprintf("group_variable <- \"%s\"", group),
+            "analysis_input <- prepared_data[, c(numeric_vars, group_variable), drop = FALSE]"
+          )
+        } else {
+          code_lines <- c(
+            code_lines,
+            "analysis_input <- prepared_data[, numeric_vars, drop = FALSE]"
+          )
+        }
+
+        call_lines <- c(
+          "",
+          "analysis <- MVN::mvn(",
+          "  data = analysis_input,"
+        )
+        if (!is.null(group)) {
+          call_lines <- c(call_lines, sprintf("  subset = \"%s\",", group))
+        }
+        call_lines <- c(
+          call_lines,
+          sprintf("  mvn_test = \"%s\",", opts$mvn_test),
+          sprintf("  univariate_test = \"%s\",", opts$univariate_test),
+          sprintf("  multivariate_outlier_method = \"%s\",", opts$outlier_method),
+          sprintf("  descriptives = %s,", if (isTRUE(opts$descriptives)) "TRUE" else "FALSE"),
+          sprintf("  bootstrap = %s,", if (isTRUE(opts$bootstrap)) "TRUE" else "FALSE"),
+          sprintf("  alpha = %s,", format_scalar(opts$alpha)),
+          sprintf("  B = %s,", format_scalar(opts$B, digits = 8)),
+          sprintf("  cores = %s,", format_scalar(opts$cores, digits = 3)),
+          "  show_new_data = TRUE,",
+          "  tidy = TRUE",
+          ")",
+          "",
+          "# Inspect the core multivariate test results",
+          "summary(analysis, select = \"mvn\")"
+        )
+
+        c(code_lines, call_lines)
+      }
+
+      write_table_csv <- function(df, path) {
+        df <- as.data.frame(df)
+        row_ids <- rownames(df)
+        if (!is.null(row_ids) && any(nzchar(row_ids))) {
+          df <- cbind(Row = row_ids, df, stringsAsFactors = FALSE, check.names = FALSE)
+        }
+        utils::write.csv(df, path, row.names = FALSE)
+      }
+
+      collect_analysis_tables <- function(res) {
+        tables <- list(
+          multivariate_normality = res$multivariate_normality,
+          univariate_normality = res$univariate_normality,
+          descriptive_statistics = res$descriptives,
+          multivariate_outliers = res$multivariate_outliers,
+          cleaned_data = res$new_data
+        )
+        tables <- Filter(function(tbl) {
+          if (is.null(tbl)) {
+            return(FALSE)
+          }
+          df <- tryCatch(as.data.frame(tbl), error = function(e) NULL)
+          if (is.null(df)) {
+            return(FALSE)
+          }
+          nrow(df) > 0 || ncol(df) > 0
+        }, tables)
+        lapply(tables, as.data.frame)
+      }
+
+      write_tables_archive <- function(res, destination) {
+        tables <- collect_analysis_tables(res)
+        if (!length(tables)) {
+          stop("No tables were produced for the current analysis.")
+        }
+        tmpdir <- tempfile(pattern = "mvn_tables_")
+        dir.create(tmpdir)
+        tables_dir <- file.path(tmpdir, "tables")
+        dir.create(tables_dir, recursive = TRUE)
+
+        manifest <- c()
+        friendly_names <- c(
+          multivariate_normality = "multivariate-normality",
+          univariate_normality = "univariate-normality",
+          descriptive_statistics = "descriptive-statistics",
+          multivariate_outliers = "multivariate-outliers",
+          cleaned_data = "cleaned-data"
+        )
+
+        for (name in names(tables)) {
+          file_stub <- friendly_names[[name]]
+          if (is.null(file_stub)) {
+            file_stub <- sanitize_for_filename(name)
+          }
+          out_path <- file.path(tables_dir, paste0(file_stub, ".csv"))
+          write_table_csv(tables[[name]], out_path)
+          manifest <- c(manifest, sprintf("tables/%s.csv", file_stub))
+        }
+
+        readme <- c(
+          "Analysis tables exported from the MVN Shiny application.",
+          "Each CSV file contains one of the tabular outputs shown in the Results tab.",
+          "",
+          "Files included:"
+        )
+        readme <- c(readme, paste0("- ", manifest))
+        writeLines(readme, con = file.path(tmpdir, "README.txt"))
+
+        old_wd <- getwd()
+        on.exit(setwd(old_wd), add = TRUE)
+        setwd(tmpdir)
+        files_to_zip <- list.files(tmpdir, recursive = TRUE)
+        utils::zip(zipfile = destination, files = files_to_zip)
+      }
+
+      create_multivariate_scatter <- function(numeric_data, group_values, subset_label) {
+        if (is.null(numeric_data) || ncol(numeric_data) < 2) {
+          return(NULL)
+        }
+        if (ncol(numeric_data) >= 3 && nrow(numeric_data) >= 3) {
+          pcs <- tryCatch(stats::prcomp(numeric_data, center = TRUE, scale. = TRUE), error = function(e) NULL)
+          if (!is.null(pcs) && ncol(pcs$x) >= 3) {
+            coords <- pcs$x[, 1:3, drop = FALSE]
+            plt <- plotly::plot_ly(
+              x = coords[, 1],
+              y = coords[, 2],
+              z = coords[, 3],
+              type = "scatter3d",
+              mode = "markers",
+              marker = list(size = 4, opacity = 0.7),
+              color = if (!is.null(group_values)) as.factor(group_values) else NULL,
+              colors = "Viridis"
+            )
+            label <- if (!is.null(subset_label) && nzchar(subset_label)) subset_label else "Group"
+            return(plotly::layout(
+              plt,
+              scene = list(
+                xaxis = list(title = "PC1"),
+                yaxis = list(title = "PC2"),
+                zaxis = list(title = "PC3")
+              ),
+              legend = list(title = list(text = label))
+            ))
+          }
+        }
+        plt <- plotly::plot_ly(
+          x = numeric_data[[1]],
+          y = numeric_data[[2]],
+          type = "scatter",
+          mode = "markers",
+          marker = list(size = 8, opacity = 0.7),
+          color = if (!is.null(group_values)) as.factor(group_values) else NULL,
+          colors = "Viridis"
+        )
+        label <- if (!is.null(subset_label) && nzchar(subset_label)) subset_label else "Group"
+        plotly::layout(
+          plt,
+          xaxis = list(title = colnames(numeric_data)[1]),
+          yaxis = list(title = colnames(numeric_data)[2]),
+          legend = list(title = list(text = label))
+        )
+      }
+
+      `%||%` <- function(x, y) {
+        if (!is.null(x) && length(x) && !is.na(x[1])) x else y
+      }
+
+      collect_plot_specs <- function(res, opts) {
+        numeric_data <- get_numeric_data(res)
+        if (is.null(numeric_data)) {
+          return(list())
+        }
+        group_values <- get_group_values(res)
+        grouped_entries <- get_grouped_numeric_data(res)
+
+        specs <- list()
+        add_spec <- function(path, object, type, description) {
+          if (is.null(object)) {
+            return(NULL)
+          }
+          specs[[length(specs) + 1]] <<- list(path = path, object = object, type = type, description = description)
+          invisible(NULL)
+        }
+
+        scatter <- create_multivariate_scatter(numeric_data, group_values, res$subset)
+        if (!is.null(scatter)) {
+          scatter_type <- if (inherits(scatter, "plotly")) "html" else "png"
+          scatter_path <- if (identical(scatter_type, "html")) "multivariate/scatter.html" else "multivariate/scatter.png"
+          add_spec(scatter_path, scatter, scatter_type, "Interactive scatter plot of the analysed variables.")
+        }
+
+        if (ncol(numeric_data) >= 2 && nrow(numeric_data) >= 3) {
+          overall_qq <- tryCatch(
+            MVN::multivariate_diagnostic_plot(numeric_data, type = "qq"),
+            error = function(e) NULL
+          )
+          if (!is.null(overall_qq)) {
+            add_spec("multivariate/mahalanobis-qq_overall.png", overall_qq, "png", "Mahalanobis Q-Q plot for all observations.")
+          }
+          if (!is.null(grouped_entries) && length(grouped_entries)) {
+            for (entry in grouped_entries) {
+              df_group <- entry$data
+              if (is.null(df_group) || ncol(df_group) < 2 || nrow(df_group) < 3) {
+                next
+              }
+              plot_obj <- tryCatch(
+                MVN::multivariate_diagnostic_plot(df_group, type = "qq"),
+                error = function(e) NULL
+              )
+              if (!is.null(plot_obj)) {
+                file_name <- sprintf("multivariate/mahalanobis-qq_%s.png", sanitize_for_filename(entry$label))
+                description <- sprintf("Mahalanobis Q-Q plot for group %s.", entry$label)
+                add_spec(file_name, plot_obj, "png", description)
+              }
+            }
+          }
+        }
+
+        diag_titles <- c(
+          histogram = "Histograms with normal overlay",
+          qq = "Q-Q plots",
+          boxplot = "Boxplots by variable",
+          scatter = "Scatter plots by variable"
+        )
+        if (ncol(numeric_data) >= 1) {
+          for (type in names(diag_titles)) {
+            plot_obj <- tryCatch(
+              MVN::univariate_diagnostic_plot(numeric_data, type = type, title = diag_titles[[type]]),
+              error = function(e) NULL
+            )
+            if (!is.null(plot_obj)) {
+              file_name <- sprintf("univariate/%s_overall.png", sanitize_for_filename(type))
+              description <- sprintf("%s for all selected numeric variables.", diag_titles[[type]])
+              add_spec(file_name, plot_obj, "png", description)
+            }
+            if (!is.null(grouped_entries) && length(grouped_entries)) {
+              for (entry in grouped_entries) {
+                df_group <- entry$data
+                if (is.null(df_group) || !nrow(df_group) || !ncol(df_group)) {
+                  next
+                }
+                grouped_plot <- tryCatch(
+                  MVN::univariate_diagnostic_plot(
+                    df_group,
+                    type = type,
+                    title = sprintf("%s — %s", diag_titles[[type]], entry$label)
+                  ),
+                  error = function(e) NULL
+                )
+                if (!is.null(grouped_plot)) {
+                  file_name <- sprintf(
+                    "univariate/%s_%s.png",
+                    sanitize_for_filename(type),
+                    sanitize_for_filename(entry$label)
+                  )
+                  description <- sprintf("%s for group %s.", diag_titles[[type]], entry$label)
+                  add_spec(file_name, grouped_plot, "png", description)
+                }
+              }
+            }
+          }
+        }
+
+        if (ncol(numeric_data) >= 2) {
+          method <- opts$outlier_method %||% "quan"
+          alpha <- opts$alpha %||% 0.05
+          overall_outlier <- tryCatch({
+            res_out <- MVN::mv_outlier(numeric_data, method = method, alpha = alpha, outlier = FALSE)
+            res_out$qq_outlier_plot
+          }, error = function(e) NULL)
+          if (!is.null(overall_outlier)) {
+            add_spec("outliers/outlier-qq_overall.png", overall_outlier, "png", "Outlier diagnostics Q-Q plot for all observations.")
+          }
+          if (!is.null(grouped_entries) && length(grouped_entries)) {
+            for (entry in grouped_entries) {
+              df_group <- entry$data
+              if (is.null(df_group) || ncol(df_group) < 2) {
+                next
+              }
+              grouped_outlier <- tryCatch({
+                res_out <- MVN::mv_outlier(df_group, method = method, alpha = alpha, outlier = FALSE)
+                res_out$qq_outlier_plot
+              }, error = function(e) NULL)
+              if (!is.null(grouped_outlier)) {
+                file_name <- sprintf("outliers/outlier-qq_%s.png", sanitize_for_filename(entry$label))
+                description <- sprintf("Outlier diagnostics Q-Q plot for group %s.", entry$label)
+                add_spec(file_name, grouped_outlier, "png", description)
+              }
+            }
+          }
+        }
+
+        specs
+      }
+
+      save_plot_spec <- function(spec, root_dir) {
+        dest <- file.path(root_dir, spec$path)
+        dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+        if (identical(spec$type, "html")) {
+          htmlwidgets::saveWidget(spec$object, file = dest, selfcontained = TRUE)
+        } else if (identical(spec$type, "png")) {
+          grDevices::png(filename = dest, width = 1600, height = 1000, res = 150)
+          on.exit(grDevices::dev.off(), add = TRUE)
+          print(spec$object)
+          grDevices::dev.off()
+        } else {
+          stop(sprintf("Unsupported plot export type: %s", spec$type))
+        }
+      }
+
+      write_plots_archive <- function(res, opts, destination) {
+        specs <- collect_plot_specs(res, opts)
+        if (!length(specs)) {
+          stop("No plots were produced for the current analysis.")
+        }
+        tmpdir <- tempfile(pattern = "mvn_plots_")
+        dir.create(tmpdir)
+        plots_dir <- file.path(tmpdir, "plots")
+        dir.create(plots_dir, recursive = TRUE)
+
+        manifest <- character()
+        for (spec in specs) {
+          save_plot_spec(spec, plots_dir)
+          manifest <- c(manifest, sprintf("plots/%s", spec$path))
+        }
+
+        readme <- c(
+          "Plots exported from the MVN Shiny application.",
+          "PNG files contain static diagnostics while HTML files preserve interactive views.",
+          "",
+          "Files included:"
+        )
+        readme <- c(readme, paste0("- ", manifest))
+        writeLines(readme, con = file.path(tmpdir, "README.txt"))
+
+        old_wd <- getwd()
+        on.exit(setwd(old_wd), add = TRUE)
+        setwd(tmpdir)
+        files_to_zip <- list.files(tmpdir, recursive = TRUE)
+        utils::zip(zipfile = destination, files = files_to_zip)
+      }
+
+      output$analysis_code <- shiny::renderUI({
+        code_lines <- build_analysis_code()
+        if (is.null(code_lines)) {
+          return(shiny::div(class = "text-muted", "Run the analysis to generate reproducible R code."))
+        }
+        code_text <- paste(code_lines, collapse = "\n")
         shiny::tagList(
           shiny::p(
-            sprintf(
-              "Prepared dataset contains %s observations and %s numeric variables.",
-              format(sample_n, big.mark = ",", trim = TRUE),
-              format(sample_p, big.mark = ",", trim = TRUE)
-            )
+            class = "text-muted",
+            "Copy the script below to recreate the analysis with MVN::mvn()."
           ),
-          if (!is.null(group)) {
-            shiny::p(
-              sprintf(
-                "Grouping variable: %s (%d levels).",
-                group,
-                length(unique(analysis_df[[group]][!is.na(analysis_df[[group]])]))
-              )
-            )
-          },
-          shiny::p(
-            sprintf(
-              "Latest multivariate normality test: %s (\u03b1 = %s).",
-              test_name,
-              format(opts$alpha, digits = 3, trim = TRUE)
-            )
-          ),
-          if (!is.null(opts$outlier_label)) {
-            shiny::p(
-              sprintf(
-                "Outlier method: %s (%d flagged).",
-                opts$outlier_label,
-                outlier_count
-              )
-            )
-          },
-          if (!is.null(cleaned_rows)) {
-            shiny::p(
-              sprintf(
-                "Cleaned dataset contains %s observations after excluding flagged outliers.",
-                format(cleaned_rows, big.mark = ",", trim = TRUE)
-              )
-            )
-          },
-          if (isTRUE(opts$bootstrap) || identical(opts$mvn_test, "energy")) {
-            shiny::p(
-              sprintf(
-                "Bootstrap settings: B = %d, cores = %d.",
-                opts$B,
-                opts$cores
-              )
-            )
-          },
-          if (!identical(p_info$display, "\u2014")) {
-            shiny::p(sprintf("Reported p-value: %s", p_info$display))
-          },
-          if (isTRUE(opts$descriptives)) {
-            shiny::p("Descriptive statistics were included in the analysis output.")
-          } else {
-            shiny::p("Descriptive statistics were skipped to streamline computation.")
-          }
+          shiny::tags$pre(
+            class = "bg-light border rounded p-3",
+            shiny::tags$code(htmltools::htmlEscape(code_text))
+          )
         )
       })
-
-      output$report_table <- shiny::renderTable({
-        res <- analysis_result()
-        shiny::req(res)
-        tbl <- res$multivariate_normality
-        shiny::req(tbl)
-        as.data.frame(tbl)
-      }, rownames = FALSE)
 
       output$download_data <- shiny::downloadHandler(
         filename = function() {
@@ -441,76 +606,26 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         }
       )
 
-      output$download_results <- shiny::downloadHandler(
+      output$download_tables_zip <- shiny::downloadHandler(
         filename = function() {
-          paste0(base_name(), "_analysis.rds")
+          paste0(base_name(), "_tables.zip")
         },
         content = function(file) {
           res <- analysis_result()
           shiny::req(res)
-          saveRDS(res, file)
+          write_tables_archive(res, file)
         }
       )
 
-      output$download_results_csv <- shiny::downloadHandler(
+      output$download_plots_zip <- shiny::downloadHandler(
         filename = function() {
-          paste0(base_name(), "_analysis_tables.csv")
+          paste0(base_name(), "_plots.zip")
         },
         content = function(file) {
           res <- analysis_result()
-          shiny::req(res)
-          csv_data <- build_analysis_csv(res)
-          if (is.null(csv_data) || !nrow(csv_data)) {
-            utils::write.csv(
-              data.frame(message = "No tabular results were produced for this analysis.", stringsAsFactors = FALSE),
-              file,
-              row.names = FALSE
-            )
-          } else {
-            utils::write.csv(csv_data, file, row.names = FALSE)
-          }
-        }
-      )
-
-      output$download_parameters_yaml <- shiny::downloadHandler(
-        filename = function() {
-          paste0(base_name(), "_parameters.yaml")
-        },
-        content = function(file) {
-          params <- collect_parameters()
-          if (is.null(params) || !length(params)) {
-            params <- list(message = "No analysis parameters are available.")
-          }
-          yaml::write_yaml(params, file)
-        }
-      )
-
-      output$download_parameters_json <- shiny::downloadHandler(
-        filename = function() {
-          paste0(base_name(), "_parameters.json")
-        },
-        content = function(file) {
-          params <- collect_parameters()
-          if (is.null(params) || !length(params)) {
-            params <- list(message = "No analysis parameters are available.")
-          }
-          jsonlite::write_json(params, file, pretty = TRUE, auto_unbox = TRUE, null = "null")
-        }
-      )
-
-      output$parameter_log <- shiny::renderUI({
-        params <- collect_parameters()
-        build_parameter_table(params)
-      })
-
-      output$download_rmd_template <- shiny::downloadHandler(
-        filename = function() {
-          paste0(base_name(), "_analysis_template.Rmd")
-        },
-        content = function(file) {
-          params <- collect_parameters()
-          template <- build_rmd_template(base_name(), params)
-          writeLines(template, con = file)
+          opts <- settings()
+          shiny::req(res, opts)
+          write_plots_archive(res, opts, file)
         }
       )
     }
