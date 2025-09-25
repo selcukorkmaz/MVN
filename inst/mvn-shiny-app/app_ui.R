@@ -5,19 +5,35 @@ app_ui <- function(request) {
     header = shiny::tags$head(
       shiny::tags$style(
         "
-        .selectize-control {
+        .selectize-control,
+        .dropdown,
+        .dropup,
+        .dropend,
+        .dropstart {
           position: relative;
-          z-index: 2000 !important;
+          z-index: 9998 !important;
+          overflow: visible !important;
         }
 
         .selectize-dropdown,
-        .dropdown-menu {
-          z-index: 2001 !important;
+        .selectize-dropdown-content,
+        .dropdown-menu,
+        .dropdown-menu.show {
+          z-index: 9999 !important;
         }
 
-        .selectize-dropdown-content {
-          position: relative;
-          z-index: 2002 !important;
+        .bslib-card,
+        .bslib-card > .card,
+        .bslib-card .card,
+        .bslib-card .card-body,
+        .card,
+        .card-body,
+        .layout-sidebar,
+        .layout-sidebar .sidebar,
+        .layout-sidebar .main,
+        .layout-column-wrap,
+        .layout-column-wrap > * {
+          overflow: visible !important;
         }
         "
       )
