@@ -930,6 +930,11 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         shiny::tagList(
           shiny::div(
             class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
+            shiny::uiOutput(ns("univariate_table"))
+          ),
+          shiny::div(
+            class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Histograms with normal curve"),
             shiny::plotOutput(ns("univariate_hist"), height = plot_height)
           ),
@@ -940,13 +945,18 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           ),
           shiny::div(
             class = "visual-block",
-            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Test statistics"),
-            shiny::uiOutput(ns("univariate_table"))
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Boxplots by variable"),
+            shiny::plotOutput(ns("univariate_boxplot"), height = plot_height)
+          ),
+          shiny::div(
+            class = "visual-block",
+            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Scatter plots by variable"),
+            shiny::plotOutput(ns("univariate_scatter"), height = plot_height)
           ),
           shiny::tags$details(
             shiny::tags$summary("Interpretation notes"),
-            shiny::tags$p("Histograms and Q-Q plots reveal departures from normality before you inspect test statistics."),
-            shiny::tags$p("Use the highlighted p-values to flag variables needing transformation or closer inspection.")
+            shiny::tags$p("Histograms, Q-Q plots, and boxplots reveal departures from normality before you inspect test statistics."),
+            shiny::tags$p("Scatter plots help spot trends or runs in the data, while highlighted p-values flag variables needing transformation or closer inspection.")
           )
         )
       })
@@ -965,6 +975,22 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         data <- get_numeric_data(res)
         shiny::req(data)
         MVN::univariate_diagnostic_plot(data, type = "qq", title = "Q-Q plots")
+      })
+
+      output$univariate_boxplot <- shiny::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        data <- get_numeric_data(res)
+        shiny::req(data)
+        MVN::univariate_diagnostic_plot(data, type = "boxplot", title = "Boxplots by variable")
+      })
+
+      output$univariate_scatter <- shiny::renderPlot({
+        res <- analysis_result()
+        shiny::req(res)
+        data <- get_numeric_data(res)
+        shiny::req(data)
+        MVN::univariate_diagnostic_plot(data, type = "scatter", title = "Scatter plots by variable")
       })
 
       output$univariate_table <- shiny::renderUI({
