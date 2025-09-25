@@ -172,6 +172,27 @@ mod_results_ui <- function(id) {
     "  padding: 0;",
     "  background: transparent;",
     "}",
+    ".grouped-plot-stack {",
+    "  display: flex;",
+    "  flex-direction: column;",
+    "  gap: 1rem;",
+    "}",
+    ".grouped-plot-block {",
+    "  background: rgba(248, 249, 250, 0.65);",
+    "  border: 1px solid rgba(0, 0, 0, 0.05);",
+    "  border-radius: 0.85rem;",
+    "  padding: 0.85rem;",
+    "}",
+    ".grouped-plot-block .grouped-plot-label {",
+    "  font-size: 0.75rem;",
+    "  letter-spacing: 0.08em;",
+    "  text-transform: uppercase;",
+    "  color: var(--bs-secondary-color, #6c757d);",
+    "  margin-bottom: 0.5rem;",
+    "  display: inline-flex;",
+    "  align-items: center;",
+    "  gap: 0.35rem;",
+    "}",
     "@media (max-width: 576px) {",
     "  .results-card.card-fullscreen {",
     "    inset: 0.75rem;",
@@ -890,6 +911,100 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         df[[group]]
       }
 
+      format_group_label <- function(value) {
+        if (is.null(value) || length(value) == 0) {
+          return("Missing")
+        }
+        value <- value[1]
+        if (is.na(value)) {
+          return("Missing")
+        }
+        if (is.factor(value)) {
+          value <- as.character(value)
+        }
+        formatted <- if (inherits(value, c("POSIXt", "Date"))) {
+          format(value)
+        } else if (is.numeric(value)) {
+          format(value, trim = TRUE, scientific = FALSE)
+        } else {
+          as.character(value)
+        }
+        formatted <- trimws(formatted)
+        if (!nzchar(formatted)) "Missing" else formatted
+      }
+
+      sanitize_for_id <- function(x) {
+        if (is.null(x) || !nzchar(x)) {
+          x <- "group"
+        }
+        x <- gsub("[^A-Za-z0-9]+", "_", x)
+        x <- gsub("_+", "_", x)
+        x <- gsub("^_+|_+$", "", x)
+        if (!nzchar(x)) {
+          x <- "group"
+        }
+        tolower(x)
+      }
+
+      get_grouped_numeric_data <- function(res) {
+        if (is.null(res)) {
+          return(NULL)
+        }
+        data <- res$data
+        if (is.null(data)) {
+          return(NULL)
+        }
+        df <- as.data.frame(data)
+        group <- res$subset
+        if (is.null(group) || !nzchar(group) || !(group %in% names(df))) {
+          return(NULL)
+        }
+        numeric_cols <- names(df)[vapply(df, is.numeric, logical(1))]
+        numeric_cols <- setdiff(numeric_cols, group)
+        if (!length(numeric_cols)) {
+          return(NULL)
+        }
+        group_vals <- df[[group]]
+        unique_vals <- unique(group_vals)
+        if (!length(unique_vals)) {
+          return(NULL)
+        }
+        entries <- list()
+        counter <- 0L
+        for (val in unique_vals) {
+          if (is.na(val)) {
+            mask <- is.na(group_vals)
+            label <- "Missing"
+          } else {
+            mask <- group_vals == val
+            label <- format_group_label(val)
+          }
+          subset_df <- df[mask, numeric_cols, drop = FALSE]
+          if (!nrow(subset_df) || !ncol(subset_df)) {
+            next
+          }
+          counter <- counter + 1L
+          key <- sprintf("group_%03d", counter)
+          entries[[key]] <- list(
+            key = key,
+            label = label,
+            data = subset_df
+          )
+        }
+        if (!length(entries)) {
+          return(NULL)
+        }
+        entries
+      }
+
+      grouped_numeric_data <- shiny::reactive({
+        res <- analysis_result()
+        if (is.null(res)) {
+          return(NULL)
+        }
+        get_grouped_numeric_data(res)
+      })
+
       compute_plot_height <- function(num_vars, base = 260, per_row = 140) {
         if (is.null(num_vars) || !is.finite(num_vars) || num_vars <= 0) {
           return(paste0(base, "px"))
@@ -1170,7 +1285,6 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (is.null(numeric_data) || ncol(numeric_data) < 1) {
           return(shiny::div(class = "alert alert-warning", "Select at least one numeric variable to display univariate diagnostics."))
         }
-        plot_height <- compute_plot_height(ncol(numeric_data))
         shiny::tagList(
           shiny::div(
             class = "visual-block",
@@ -1180,22 +1294,22 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Histograms with normal curve"),
-            shiny::plotOutput(ns("univariate_hist"), height = plot_height)
+            shiny::uiOutput(ns("univariate_hist_panel"))
           ),
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Q-Q plots by variable"),
-            shiny::plotOutput(ns("univariate_qq"), height = plot_height)
+            shiny::uiOutput(ns("univariate_qq_panel"))
           ),
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Boxplots by variable"),
-            shiny::plotOutput(ns("univariate_boxplot"), height = plot_height)
+            shiny::uiOutput(ns("univariate_boxplot_panel"))
           ),
           shiny::div(
             class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Scatter plots by variable"),
-            shiny::plotOutput(ns("univariate_scatter"), height = plot_height)
+            shiny::uiOutput(ns("univariate_scatter_panel"))
           ),
           shiny::tags$details(
             shiny::tags$summary("Interpretation notes"),
@@ -1205,7 +1319,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         )
       })
 
-      output$univariate_hist <- shiny::renderPlot({
+      output$univariate_hist_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -1213,7 +1327,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         MVN::univariate_diagnostic_plot(data, type = "histogram", title = "Histograms with normal overlay")
       })
 
-      output$univariate_qq <- shiny::renderPlot({
+      output$univariate_qq_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -1221,7 +1335,7 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         MVN::univariate_diagnostic_plot(data, type = "qq", title = "Q-Q plots")
       })
 
-      output$univariate_boxplot <- shiny::renderPlot({
+      output$univariate_boxplot_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
@@ -1229,13 +1343,70 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         MVN::univariate_diagnostic_plot(data, type = "boxplot", title = "Boxplots by variable")
       })
 
-      output$univariate_scatter <- shiny::renderPlot({
+      output$univariate_scatter_plot <- shiny::renderPlot({
         res <- analysis_result()
         shiny::req(res)
         data <- get_numeric_data(res)
         shiny::req(data)
         MVN::univariate_diagnostic_plot(data, type = "scatter", title = "Scatter plots by variable")
       })
+
+      render_grouped_univariate_panel <- function(panel_id, base_plot_id, plot_type, base_title) {
+        output[[panel_id]] <- shiny::renderUI({
+          res <- analysis_result()
+          shiny::req(res)
+          numeric_data <- get_numeric_data(res)
+          shiny::req(numeric_data)
+          plot_height <- compute_plot_height(ncol(numeric_data))
+          groups <- grouped_numeric_data()
+          if (is.null(groups) || !length(groups)) {
+            return(shiny::plotOutput(ns(base_plot_id), height = plot_height))
+          }
+          valid_groups <- Filter(function(entry) {
+            is.list(entry) &&
+              !is.null(entry$data) &&
+              is.data.frame(entry$data) &&
+              nrow(entry$data) > 0 &&
+              ncol(entry$data) > 0
+          }, groups)
+          if (!length(valid_groups)) {
+            return(shiny::plotOutput(ns(base_plot_id), height = plot_height))
+          }
+          group_ui <- lapply(valid_groups, function(entry) {
+            safe_id <- paste(entry$key, sanitize_for_id(entry$label), sep = "_")
+            plot_id <- paste0(base_plot_id, "_", safe_id)
+            local({
+              id <- plot_id
+              key <- entry$key
+              output[[id]] <- shiny::renderPlot({
+                groups_latest <- grouped_numeric_data()
+                shiny::req(groups_latest)
+                entry_latest <- groups_latest[[key]]
+                shiny::req(entry_latest)
+                MVN::univariate_diagnostic_plot(
+                  entry_latest$data,
+                  type = plot_type,
+                  title = sprintf("%s \u2014 %s", base_title, entry_latest$label)
+                )
+              })
+            })
+            shiny::tags$div(
+              class = "grouped-plot-block",
+              shiny::tags$span(
+                class = "grouped-plot-label",
+                htmltools::htmlEscape(paste("Group:", entry$label))
+              ),
+              shiny::plotOutput(ns(plot_id), height = plot_height)
+            )
+          })
+          shiny::tags$div(class = "grouped-plot-stack", group_ui)
+        })
+      }
+
+      render_grouped_univariate_panel("univariate_hist_panel", "univariate_hist_plot", "histogram", "Histograms with normal overlay")
+      render_grouped_univariate_panel("univariate_qq_panel", "univariate_qq_plot", "qq", "Q-Q plots")
+      render_grouped_univariate_panel("univariate_boxplot_panel", "univariate_boxplot_plot", "boxplot", "Boxplots by variable")
+      render_grouped_univariate_panel("univariate_scatter_panel", "univariate_scatter_plot", "scatter", "Scatter plots by variable")
 
       output$univariate_table <- shiny::renderUI({
         res <- analysis_result()
