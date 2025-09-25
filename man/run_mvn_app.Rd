@@ -3,14 +3,25 @@
 \name{run_mvn_app}
 \alias{run_mvn_app}
 \title{Launch the MVN Shiny application}
-\usage{run_mvn_app(...)}
-\arguments{
-\item{...}{Additional arguments passed to \code{shiny::runApp()}, such as \code{host} or \code{port}.}
+\usage{
+run_mvn_app(...)
 }
-\value{This function is called for its side effects of launching the Shiny application.}
-\description{Opens the interactive Shiny interface bundled with the package, allowing users to explore MVN's functionality without writing code.}
+\arguments{
+\item{...}{Additional arguments passed to [shiny::runApp()], such as
+`host` or `port`.}
+}
+\value{
+This function is called for its side effects of launching the
+  Shiny application.
+}
+\description{
+Opens the interactive Shiny interface bundled with the
+  package, allowing users to explore MVN's functionality without writing
+  code.
+}
 \examples{
 \dontrun{
 run_mvn_app()
 }
+
 }
