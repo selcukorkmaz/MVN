@@ -15,11 +15,6 @@ app_server <- function(input, output, session) {
     subset = data_prep$subset
   )
 
-  mod_graphs_server(
-    "graphs",
-    processed_data = data_prep$processed_data
-  )
-
   mod_report_server(
     "report",
     processed_data = data_prep$processed_data,
