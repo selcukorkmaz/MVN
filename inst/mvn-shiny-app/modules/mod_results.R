@@ -243,6 +243,10 @@ mod_results_ui <- function(id) {
     ".p-value-ok {",
     "  font-weight: 600;",
     "}",
+    ".p-value-mixed {",
+    "  font-weight: 600;",
+    "  color: var(--bs-primary, #0d6efd);",
+    "}",
     ".badge-decision {",
     "  display: inline-flex;",
     "  align-items: center;",
@@ -1039,15 +1043,145 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         multivariate_tbl <- res$multivariate_normality
         p_display <- "\u2014"
         p_value <- NA_real_
+        p_class <- NULL
+        p_tooltip <- NULL
+        decision_overall <- NULL
+        decision_tooltip <- NULL
+        group_summaries <- NULL
         if (!is.null(multivariate_tbl)) {
-          df_p <- as.data.frame(multivariate_tbl)
+          df_p <- as.data.frame(multivariate_tbl, stringsAsFactors = FALSE)
           if (nrow(df_p)) {
             p_col <- intersect(c("p.value", "p_value", "p.value.skew"), names(df_p))
             if (length(p_col)) {
-              raw <- df_p[[p_col[1]]][1]
-              p_display <- format_number(raw)
-              p_value <- parse_p_value(raw)
+              value_column <- p_col[1]
+              if (!is.null(group) && "Group" %in% names(df_p)) {
+                groups_vec <- df_p$Group
+                unique_groups <- unique(groups_vec)
+                if (length(unique_groups)) {
+                  group_entries <- list()
+                  for (grp in unique_groups) {
+                    idx <- which(groups_vec == grp)[1]
+                    if (!length(idx) || is.na(idx)) {
+                      next
+                    }
+                    raw_value <- df_p[[value_column]][idx]
+                    display_value <- format_number(raw_value)
+                    numeric_value <- parse_p_value(raw_value)
+                    label <- format_group_label(grp)
+                    decision_value <- classify_decision(numeric_value, opts$alpha)
+                    group_entries[[length(group_entries) + 1L]] <- list(
+                      group = label,
+                      display = display_value,
+                      numeric = numeric_value,
+                      decision = decision_value
+                    )
+                  }
+                  group_entries <- Filter(Negate(is.null), group_entries)
+                  if (length(group_entries)) {
+                    group_summaries <- group_entries
+                    numeric_values <- vapply(group_entries, function(entry) entry$numeric, numeric(1))
+                    finite_idx <- which(is.finite(numeric_values))
+                    if (length(finite_idx)) {
+                      min_idx <- finite_idx[which.min(numeric_values[finite_idx])]
+                      max_idx <- finite_idx[which.max(numeric_values[finite_idx])]
+                      min_display <- group_entries[[min_idx]]$display
+                      max_display <- group_entries[[max_idx]]$display
+                      min_value <- numeric_values[min_idx]
+                      max_value <- numeric_values[max_idx]
+                      tolerance <- max(0.001, opts$alpha * 0.05)
+                      if (length(finite_idx) == 1 || abs(max_value - min_value) <= tolerance) {
+                        p_value <- min_value
+                        p_display <- min_display
+                      } else {
+                        p_value <- NA_real_
+                        p_display <- sprintf("%s \u2013 %s", min_display, max_display)
+                      }
+                      if (!is.null(p_display) && !nzchar(p_display)) {
+                        p_display <- "\u2014"
+                      }
+                      if (is.finite(p_value)) {
+                        p_class <- if (p_value < opts$alpha) "p-value-low" else "p-value-ok"
+                      } else {
+                        decision_statuses <- vapply(group_entries[finite_idx], function(entry) entry$decision$status, character(1))
+                        unique_statuses <- unique(decision_statuses)
+                        if (length(unique_statuses) == 1) {
+                          if (identical(unique_statuses, "not_normal")) {
+                            p_class <- "p-value-low"
+                          } else if (identical(unique_statuses, "normal")) {
+                            p_class <- "p-value-ok"
+                          } else {
+                            p_class <- "p-value-mixed"
+                          }
+                        } else {
+                          p_class <- "p-value-mixed"
+                        }
+                      }
+                    } else {
+                      first_raw <- df_p[[value_column]][1]
+                      p_display <- format_number(first_raw)
+                      p_value <- parse_p_value(first_raw)
+                      if (is.finite(p_value)) {
+                        p_class <- if (p_value < opts$alpha) "p-value-low" else "p-value-ok"
+                      }
+                    }
+                    p_tooltip <- paste(
+                      vapply(
+                        group_entries,
+                        function(entry) sprintf("%s: %s", entry$group, entry$display),
+                        character(1)
+                      ),
+                      collapse = "\n"
+                    )
+                    decision_tooltip <- paste(
+                      vapply(
+                        group_entries,
+                        function(entry) sprintf("%s: %s", entry$group, entry$decision$label),
+                        character(1)
+                      ),
+                      collapse = "\n"
+                    )
+                    decision_statuses <- vapply(group_entries, function(entry) entry$decision$status, character(1))
+                    known_idx <- which(decision_statuses != "unknown")
+                    if (length(known_idx)) {
+                      known_statuses <- unique(decision_statuses[known_idx])
+                      if (length(known_statuses) == 1) {
+                        decision_overall <- group_entries[[known_idx[1]]]$decision
+                      } else {
+                        decision_overall <- list(
+                          status = "mixed",
+                          class = "badge-decision bg-info text-dark",
+                          icon = "\ud83d\udd00",
+                          label = "Mixed results"
+                        )
+                      }
+                    } else {
+                      decision_overall <- list(
+                        status = "unknown",
+                        class = "badge-decision bg-secondary text-white",
+                        icon = "\u2139\ufe0f",
+                        label = "Review details"
+                      )
+                    }
+                  }
+                }
+              }
+              if (is.null(group_summaries)) {
+                raw <- df_p[[value_column]][1]
+                p_display <- format_number(raw)
+                p_value <- parse_p_value(raw)
+                if (is.finite(p_value)) {
+                  p_class <- if (p_value < opts$alpha) "p-value-low" else "p-value-ok"
+                }
+              }
             }
+          }
+        }
+        if (is.null(decision_overall)) {
+          decision_overall <- classify_decision(p_value, opts$alpha)
+        }
+        if (is.null(p_class)) {
+          if (is.finite(p_value)) {
+            p_class <- if (p_value < opts$alpha) "p-value-low" else "p-value-ok"
           }
         }
         outlier_tbl <- res$multivariate_outliers
@@ -1062,12 +1196,17 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
           alpha = opts$alpha,
           p_value = p_value,
           p_display = p_display,
+          p_class = p_class,
+          p_tooltip = p_tooltip,
+          decision = decision_overall,
+          decision_tooltip = decision_tooltip,
           test_label = test_label,
           group = group,
           group_levels = group_levels,
           outlier_label = opts$outlier_label,
           outlier_count = outlier_count,
-          cleaned_available = !is.null(res$new_data)
+          cleaned_available = !is.null(res$new_data),
+          group_summaries = group_summaries
         )
       })
 
@@ -1092,8 +1231,16 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (is.null(info)) {
           return(shiny::tags$span(class = "text-muted", "\u2014"))
         }
-        cls <- if (!is.null(info$p_value) && is.finite(info$p_value) && info$p_value < info$alpha) "p-value-low" else "p-value-ok"
-        shiny::tags$span(class = cls, info$p_display)
+        cls <- info$p_class
+        if (is.null(cls) || !nzchar(cls)) {
+          cls <- if (!is.null(info$p_value) && is.finite(info$p_value) && info$p_value < info$alpha) "p-value-low" else "p-value-ok"
+        }
+        span <- shiny::tags$span(info$p_display)
+        span$attribs$class <- cls
+        if (!is.null(info$p_tooltip) && nzchar(info$p_tooltip)) {
+          span$attribs$title <- info$p_tooltip
+        }
+        span
       })
 
       output$summary_decision <- shiny::renderUI({
@@ -1101,17 +1248,24 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         if (is.null(info)) {
           return(shiny::tags$span(class = "badge-decision bg-secondary text-white", "Awaiting analysis"))
         }
-        decision <- classify_decision(info$p_value, info$alpha)
+        decision <- info$decision
+        if (is.null(decision)) {
+          decision <- classify_decision(info$p_value, info$alpha)
+        }
         label <- decision$label
         if (identical(decision$status, "borderline") && is.finite(info$p_value)) {
           direction <- if (info$p_value < info$alpha) "below" else "above"
           label <- sprintf("Borderline (%s \u03b1)", direction)
         }
-        shiny::tags$span(
+        badge <- shiny::tags$span(
           class = decision$class,
           shiny::tags$span(decision$icon, `aria-hidden` = "true"),
           shiny::tags$span(label)
         )
+        if (!is.null(info$decision_tooltip) && nzchar(info$decision_tooltip)) {
+          badge$attribs$title <- info$decision_tooltip
+        }
+        badge
       })
 
       output$summary_context <- shiny::renderUI({
