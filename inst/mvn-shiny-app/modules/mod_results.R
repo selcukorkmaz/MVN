@@ -1,6 +1,17 @@
 mod_results_ui <- function(id) {
   ns <- shiny::NS(id)
 
+  create_expand_button <- function(card_id) {
+    shiny::tags$button(
+      type = "button",
+      class = "btn btn-link btn-sm card-expand-btn",
+      `data-card-target` = card_id,
+      title = "Toggle full-screen view",
+      shiny::tags$span(class = "card-expand-icon", `aria-hidden` = "true"),
+      shiny::tags$span("Toggle full-screen view", class = "visually-hidden")
+    )
+  }
+
   summary_metric <- function(label, value_ui, icon = NULL) {
     shiny::tags$div(
       class = "summary-item d-flex align-items-center gap-3",
@@ -54,17 +65,80 @@ mod_results_ui <- function(id) {
     "}",
     ".results-card {",
     "  min-height: 100%;",
+    "  position: relative;",
     "}",
     ".results-card .card-header {",
     "  font-weight: 600;",
     "  letter-spacing: 0.06em;",
     "  text-transform: uppercase;",
     "  display: flex;",
+    "  align-items: flex-start;",
+    "  gap: 0.5rem;",
+    "}",
+    ".results-card .card-header-content {",
+    "  display: flex;",
     "  align-items: center;",
     "  gap: 0.5rem;",
     "}",
     ".results-card .card-title-icon {",
     "  font-size: 1.25rem;",
+    "}",
+    ".results-card .card-title-text {",
+    "  font-size: 0.85rem;",
+    "  letter-spacing: 0.04em;",
+    "}",
+    ".results-card .card-header .card-title-text {",
+    "  flex: 1 1 auto;",
+    "}",
+    ".card-expand-btn {",
+    "  margin-left: auto;",
+    "  padding: 0.25rem;",
+    "  color: var(--bs-secondary-color, #6c757d);",
+    "  text-decoration: none;",
+    "}",
+    ".card-expand-btn:hover,",
+    ".card-expand-btn:focus {",
+    "  color: var(--bs-primary, #0d6efd);",
+    "  text-decoration: none;",
+    "}",
+    ".card-expand-btn:focus {",
+    "  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);",
+    "  border-radius: 999px;",
+    "}",
+    ".card-expand-icon::before {",
+    "  content: '⤢';",
+    "  display: inline-block;",
+    "  font-size: 1.1rem;",
+    "  line-height: 1;",
+    "}",
+    ".results-card.card-fullscreen .card-expand-icon::before {",
+    "  content: '⤡';",
+    "}",
+    "body.card-fullscreen-open {",
+    "  overflow: hidden;",
+    "}",
+    "body.card-fullscreen-open::before {",
+    "  content: '';",
+    "  position: fixed;",
+    "  inset: 0;",
+    "  background: rgba(15, 23, 42, 0.45);",
+    "  z-index: 1040;",
+    "}",
+    ".results-card.card-fullscreen {",
+    "  position: fixed;",
+    "  inset: 1.5rem;",
+    "  z-index: 1050;",
+    "  width: auto;",
+    "  max-width: none;",
+    "  height: calc(100vh - 3rem);",
+    "  overflow: auto;",
+    "  box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.35);",
+    "}",
+    "@media (max-width: 576px) {",
+    "  .results-card.card-fullscreen {",
+    "    inset: 0.75rem;",
+    "    height: calc(100vh - 1.5rem);",
+    "  }",
     "}",
     ".results-card details {",
     "  border-top: 1px solid rgba(0, 0, 0, 0.05);",
@@ -149,6 +223,13 @@ mod_results_ui <- function(id) {
     sep = "\n"
   )
 
+  card_ids <- list(
+    multivariate = ns("card_multivariate"),
+    univariate = ns("card_univariate"),
+    descriptives = ns("card_descriptives"),
+    outlier = ns("card_outlier")
+  )
+
   shiny::tagList(
     shiny::tags$style(shiny::HTML(css_rules)),
     shiny::div(
@@ -168,37 +249,95 @@ mod_results_ui <- function(id) {
       class = "results-card-grid",
       bslib::card(
         class = "results-card",
+        id = card_ids$multivariate,
         bslib::card_header(
-          shiny::tags$span("🌐", class = "card-title-icon", `aria-hidden` = "true"),
-          "Multivariate normality"
+          class = "results-card-header",
+          shiny::tags$div(
+            class = "card-header-content",
+            shiny::tags$span("🌐", class = "card-title-icon", `aria-hidden` = "true"),
+            shiny::tags$span("Multivariate normality", class = "card-title-text")
+          ),
+          create_expand_button(card_ids$multivariate)
         ),
         shiny::uiOutput(ns("multivariate_content"))
       ),
       bslib::card(
         class = "results-card",
+        id = card_ids$univariate,
         bslib::card_header(
-          shiny::tags$span("📊", class = "card-title-icon", `aria-hidden` = "true"),
-          "Univariate normality"
+          class = "results-card-header",
+          shiny::tags$div(
+            class = "card-header-content",
+            shiny::tags$span("📊", class = "card-title-icon", `aria-hidden` = "true"),
+            shiny::tags$span("Univariate normality", class = "card-title-text")
+          ),
+          create_expand_button(card_ids$univariate)
         ),
         shiny::uiOutput(ns("univariate_content"))
       ),
       bslib::card(
         class = "results-card",
+        id = card_ids$descriptives,
         bslib::card_header(
-          shiny::tags$span("🧮", class = "card-title-icon", `aria-hidden` = "true"),
-          "Descriptive statistics"
+          class = "results-card-header",
+          shiny::tags$div(
+            class = "card-header-content",
+            shiny::tags$span("🧮", class = "card-title-icon", `aria-hidden` = "true"),
+            shiny::tags$span("Descriptive statistics", class = "card-title-text")
+          ),
+          create_expand_button(card_ids$descriptives)
         ),
         shiny::uiOutput(ns("descriptives_content"))
       ),
       bslib::card(
         class = "results-card",
+        id = card_ids$outlier,
         bslib::card_header(
-          shiny::tags$span("🚨", class = "card-title-icon", `aria-hidden` = "true"),
-          "Outlier diagnostics"
+          class = "results-card-header",
+          shiny::tags$div(
+            class = "card-header-content",
+            shiny::tags$span("🚨", class = "card-title-icon", `aria-hidden` = "true"),
+            shiny::tags$span("Outlier diagnostics", class = "card-title-text")
+          ),
+          create_expand_button(card_ids$outlier)
         ),
         shiny::uiOutput(ns("outlier_content"))
       )
     ),
+    shiny::tags$script(
+      shiny::HTML(paste(
+        "document.addEventListener('click', function (event) {",
+        "  const btn = event.target.closest('.card-expand-btn');",
+        "  if (!btn) return;",
+        "  const targetId = btn.getAttribute('data-card-target');",
+        "  if (!targetId) return;",
+        "  const card = document.getElementById(targetId);",
+        "  if (!card) return;",
+        "  event.preventDefault();",
+        "  const isActive = card.classList.contains('card-fullscreen');",
+        "  document.querySelectorAll('.results-card.card-fullscreen').forEach(function (el) {",
+        "    if (el !== card) el.classList.remove('card-fullscreen');",
+        "  });",
+        "  if (isActive) {",
+        "    card.classList.remove('card-fullscreen');",
+        "  } else {",
+        "    card.classList.add('card-fullscreen');",
+        "  }",
+        "  const hasActive = document.querySelector('.results-card.card-fullscreen') !== null;",
+        "  document.body.classList.toggle('card-fullscreen-open', hasActive);",
+        "});",
+        "document.addEventListener('keydown', function (event) {",
+        "  if (event.key === 'Escape') {",
+        "    const activeCard = document.querySelector('.results-card.card-fullscreen');",
+        "    if (activeCard) {",
+        "      activeCard.classList.remove('card-fullscreen');",
+        "      document.body.classList.remove('card-fullscreen-open');",
+        "    }",
+        "  }",
+        "});",
+        sep = "\n"
+      ))
+    )
     # bslib::accordion(
     #   id = ns("results_details"),
     #   open = character(0),
@@ -1064,11 +1203,6 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
         shiny::tagList(
           shiny::div(
             class = "visual-block",
-            shiny::tags$h6(class = "fw-semibold text-muted mb-2", "Variable boxplots"),
-            shiny::plotOutput(ns("outlier_boxplot"), height = compute_plot_height(ncol(numeric_data)))
-          ),
-          shiny::div(
-            class = "visual-block",
             shiny::tags$h6(class = "fw-semibold text-muted mb-2", outlier_plot_title),
             shiny::plotOutput(ns("outlier_distance_plot"), height = "320px")
           ),
@@ -1083,14 +1217,6 @@ mod_results_server <- function(id, processed_data, settings, run_analysis = NULL
             shiny::tags$p("Review the Q-Q plot for points deviating from the reference line and examine flagged cases below.")
           )
         )
-      })
-
-      output$outlier_boxplot <- shiny::renderPlot({
-        res <- analysis_result()
-        shiny::req(res)
-        data <- get_numeric_data(res)
-        shiny::req(data)
-        MVN::univariate_diagnostic_plot(data, type = "boxplot", title = "Boxplots by variable")
       })
 
       output$outlier_distance_plot <- shiny::renderPlot({
