@@ -584,11 +584,10 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           return(shiny::div(class = "text-muted", "Run the analysis to generate reproducible R code."))
         }
         code_text <- paste(code_lines, collapse = "\n")
-        code_block <- htmltools::preformattedText(code_text)
-        code_block <- htmltools::tagAppendAttributes(
-          code_block,
+        code_block <- htmltools::tags$pre(
           class = "bg-light border rounded p-3",
-          style = "white-space: pre-wrap;"
+          style = "white-space: pre-wrap;",
+          htmltools::htmlEscape(code_text)
         )
 
         shiny::tagList(
