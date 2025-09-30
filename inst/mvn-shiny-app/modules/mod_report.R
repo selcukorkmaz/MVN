@@ -312,6 +312,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         }
         tmpdir <- tempfile(pattern = "mvn_tables_")
         dir.create(tmpdir)
+        on.exit(unlink(tmpdir, recursive = TRUE, force = TRUE), add = TRUE)
         tables_dir <- file.path(tmpdir, "tables")
         dir.create(tables_dir, recursive = TRUE)
 
@@ -539,7 +540,6 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           grDevices::png(filename = dest, width = 1600, height = 1000, res = 150)
           on.exit(grDevices::dev.off(), add = TRUE)
           print(spec$object)
-          grDevices::dev.off()
         } else {
           stop(sprintf("Unsupported plot export type: %s", spec$type))
         }
@@ -552,6 +552,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         }
         tmpdir <- tempfile(pattern = "mvn_plots_")
         dir.create(tmpdir)
+        on.exit(unlink(tmpdir, recursive = TRUE, force = TRUE), add = TRUE)
         plots_dir <- file.path(tmpdir, "plots")
         dir.create(plots_dir, recursive = TRUE)
 
@@ -583,15 +584,19 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           return(shiny::div(class = "text-muted", "Run the analysis to generate reproducible R code."))
         }
         code_text <- paste(code_lines, collapse = "\n")
+        code_block <- htmltools::preformattedText(code_text)
+        code_block <- htmltools::tagAppendAttributes(
+          code_block,
+          class = "bg-light border rounded p-3",
+          style = "white-space: pre-wrap;"
+        )
+
         shiny::tagList(
           shiny::p(
             class = "text-muted",
             "Copy the script below to recreate the analysis with MVN::mvn()."
           ),
-          shiny::tags$pre(
-            class = "bg-light border rounded p-3",
-            shiny::tags$code(htmltools::htmlEscape(code_text))
-          )
+          code_block
         )
       })
 
