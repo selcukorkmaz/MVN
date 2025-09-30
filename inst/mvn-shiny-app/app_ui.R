@@ -41,6 +41,7 @@ app_ui <- function(request) {
     bslib::nav_panel("Data & Preprocessing", mod_data_prep_ui("data_prep")),
     bslib::nav_panel("Analysis Settings", mod_analysis_settings_ui("analysis")),
     bslib::nav_panel("Results", mod_results_ui("results")),
-    bslib::nav_panel("Report / Download", mod_report_ui("report"))
+    bslib::nav_panel("Report / Download", mod_report_ui("report")),
+    bslib::nav_panel("About", mod_about_ui("about"))
   )
 }

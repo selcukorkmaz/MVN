@@ -23,6 +23,8 @@ app_server <- function(input, output, session) {
     analysis_data = data_prep$analysis_data
   )
 
+  mod_about_server("about")
+
   observeEvent(data_prep$processed_data(), {
     prepared <- data_prep$processed_data()
     if (!is.null(prepared)) {
