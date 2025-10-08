@@ -305,6 +305,28 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         lapply(tables, as.data.frame)
       }
 
+      ensure_zip_archive <- function(source_dir, destination) {
+        files_to_zip <- list.files(source_dir, recursive = TRUE, include.dirs = TRUE)
+        if (!length(files_to_zip)) {
+          stop("Failed to create ZIP archive: no files were written to the staging directory.")
+        }
+
+        old_wd <- getwd()
+        on.exit(setwd(old_wd), add = TRUE)
+        setwd(source_dir)
+
+        if (requireNamespace("zip", quietly = TRUE)) {
+          zip::zipr(zipfile = destination, files = files_to_zip)
+        } else {
+          utils::zip(zipfile = destination, files = files_to_zip)
+        }
+
+        archive_info <- file.info(destination)
+        if (!is.finite(archive_info$size) || archive_info$size <= 0) {
+          stop("Failed to create ZIP archive: the resulting file is empty.")
+        }
+      }
+
       write_tables_archive <- function(res, destination) {
         tables <- collect_analysis_tables(res)
         if (!length(tables)) {
@@ -344,11 +366,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         readme <- c(readme, paste0("- ", manifest))
         writeLines(readme, con = file.path(tmpdir, "README.txt"))
 
-        old_wd <- getwd()
-        on.exit(setwd(old_wd), add = TRUE)
-        setwd(tmpdir)
-        files_to_zip <- list.files(tmpdir, recursive = TRUE)
-        utils::zip(zipfile = destination, files = files_to_zip)
+        ensure_zip_archive(tmpdir, destination)
       }
 
       create_multivariate_scatter <- function(numeric_data, group_values, subset_label) {
@@ -571,11 +589,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         readme <- c(readme, paste0("- ", manifest))
         writeLines(readme, con = file.path(tmpdir, "README.txt"))
 
-        old_wd <- getwd()
-        on.exit(setwd(old_wd), add = TRUE)
-        setwd(tmpdir)
-        files_to_zip <- list.files(tmpdir, recursive = TRUE)
-        utils::zip(zipfile = destination, files = files_to_zip)
+        ensure_zip_archive(tmpdir, destination)
       }
 
       output$analysis_code <- shiny::renderUI({

@@ -39,7 +39,8 @@ Suggests:
     readxl,
     shiny,
     yaml,
-    promises
+    promises,
+    zip
 Collate:
     'mvn.R'
     'mardia.R'
