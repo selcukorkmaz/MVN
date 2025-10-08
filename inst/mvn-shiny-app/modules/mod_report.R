@@ -632,7 +632,8 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           res <- analysis_result()
           shiny::req(res)
           write_tables_archive(res, file)
-        }
+        },
+        contentType = "application/zip"
       )
 
       output$download_plots_zip <- shiny::downloadHandler(
@@ -644,7 +645,8 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           opts <- settings()
           shiny::req(res, opts)
           write_plots_archive(res, opts, file)
-        }
+        },
+        contentType = "application/zip"
       )
     }
   )
