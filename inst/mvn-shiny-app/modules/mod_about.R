@@ -101,3 +101,12 @@ mod_about_ui <- function(id) {
     )
   )
 }
+
+mod_about_server <- function(id) {
+  shiny::moduleServer(
+    id,
+    function(input, output, session) {
+      invisible(NULL)
+    }
+  )
+}
