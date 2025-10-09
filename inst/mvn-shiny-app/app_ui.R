@@ -1,7 +1,10 @@
 app_ui <- function(request) {
   bslib::page_navbar(
     title = "MVN Shiny App",
-    theme = bslib::bs_theme(version = 5, bootswatch = "flatly"),
+    theme = bslib::bs_theme(
+      version = 5,
+      preset = bslib::preset_bootswatch("flatly")
+    ),
     header = shiny::tags$head(
       shiny::tags$style(
         "
