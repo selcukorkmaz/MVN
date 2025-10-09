@@ -3,7 +3,7 @@ app_ui <- function(request) {
     title = "MVN Shiny App",
     theme = bslib::bs_theme(
       version = 5,
-      bootswatch = "flatly"
+      bootswatch = "minty"
     ),
     header = shiny::tags$head(
       shiny::tags$style(
