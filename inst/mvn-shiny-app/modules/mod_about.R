@@ -5,7 +5,7 @@ mod_about_ui <- function(id) {
         version = 5,
         base_font = bslib::font_google("Inter"),
         heading_font = bslib::font_google("Inter"),
-        bootswatch = "flatly"
+        preset = bslib::preset_bootswatch("flatly")
       ),
       shiny::fluidRow(
         shiny::column(
