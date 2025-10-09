@@ -3,9 +3,12 @@ mod_about_ui <- function(id) {
     shiny::fluidPage(
       theme = bslib::bs_theme(
         version = 5,
+        bg = "#ecf0f1",
+        fg = "#2c3e50",
+        primary = "#18bc9c",
+        secondary = "#2c3e50",
         base_font = bslib::font_google("Inter"),
-        heading_font = bslib::font_google("Inter"),
-        bootswatch = "minty"
+        heading_font = bslib::font_google("Inter")
       ),
       shiny::fluidRow(
         shiny::column(
