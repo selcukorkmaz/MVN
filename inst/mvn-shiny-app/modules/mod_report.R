@@ -42,6 +42,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
   shiny::moduleServer(
     id,
     function(input, output, session) {
+      ns <- session$ns
       base_name <- shiny::reactive({
         name <- input$base_name
         if (is.null(name) || !nzchar(trimws(name))) {
@@ -273,6 +274,15 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         )
 
         c(code_lines, call_lines)
+      }
+
+      prepare_code_lines_for_export <- function(lines) {
+        if (is.null(lines)) {
+          return(NULL)
+        }
+        lines <- gsub("&lt;", "<-", lines, fixed = TRUE)
+        lines <- gsub("&gt;", ">", lines, fixed = TRUE)
+        lines
       }
 
       write_table_csv <- function(df, path) {
@@ -605,13 +615,33 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         )
 
         shiny::tagList(
-          shiny::p(
-            class = "text-muted",
-            "Copy the script below to recreate the analysis with MVN::mvn()."
+          shiny::div(
+            class = "d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3",
+            shiny::p(
+              class = "text-muted mb-0",
+              "Copy the script below to recreate the analysis with MVN::mvn()."
+            ),
+            shiny::downloadButton(
+              ns("download_analysis_code"),
+              label = "Download R script",
+              class = "btn btn-primary"
+            )
           ),
           code_block
         )
       })
+
+      output$download_analysis_code <- shiny::downloadHandler(
+        filename = function() {
+          paste0(base_name(), "_analysis.R")
+        },
+        contentType = "text/plain",
+        content = function(file) {
+          code_lines <- prepare_code_lines_for_export(build_analysis_code())
+          shiny::req(code_lines)
+          writeLines(code_lines, con = file, useBytes = TRUE)
+        }
+      )
 
       output$download_data <- shiny::downloadHandler(
         filename = function() {
