@@ -12,16 +12,16 @@ mod_report_ui <- function(id) {
           "Prepared data"
         ),
         shiny::downloadButton(ns("download_data"), label = "Prepared data (CSV)", class = "btn-primary"),
-        shiny::tags$div(
-          class = "text-uppercase text-muted fw-semibold small",
-          "Analysis tables"
-        ),
-        shiny::downloadButton(ns("download_tables_zip"), label = "All tables (ZIP)", class = "btn-outline-secondary"),
+        # shiny::tags$div(
+        #   class = "text-uppercase text-muted fw-semibold small",
+        #   "Analysis tables"
+        # ),
+        # shiny::downloadButton(ns("download_tables_zip"), label = "All tables (ZIP)", class = "btn-primary"),
         shiny::tags$div(
           class = "text-uppercase text-muted fw-semibold small",
           "Analysis plots"
         ),
-        shiny::downloadButton(ns("download_plots_zip"), label = "All plots (ZIP)", class = "btn-outline-secondary")
+        shiny::downloadButton(ns("download_plots_zip"), label = "All plots (ZIP)", class = "btn-primary")
       )
     ),
     bslib::layout_column_wrap(
@@ -50,7 +50,8 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         }
         gsub("\\s+", "_", trimws(name))
       })
-
+      
+      
       sanitize_for_filename <- function(x) {
         if (is.null(x) || !length(x)) {
           return("value")
@@ -272,16 +273,24 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           "# Inspect the core multivariate test results",
           "summary(analysis, select = \"mvn\")"
         )
-
-        c(code_lines, call_lines)
+        
+        # --- ADD THIS BLOCK ---
+        lines <- c(code_lines, call_lines)
+        lines <- gsub("&lt;", "<", lines, fixed = TRUE)
+        lines <- gsub("&gt;", ">", lines, fixed = TRUE)
+        lines <- gsub("&amp;", "&", lines, fixed = TRUE)
+        return(lines)
+        
       }
-
+      
       prepare_code_lines_for_export <- function(lines) {
         if (is.null(lines)) {
           return(NULL)
         }
-        lines <- gsub("&lt;", "<-", lines, fixed = TRUE)
+        # Decode common HTML entities back to R syntax
+        lines <- gsub("&lt;", "<", lines, fixed = TRUE)
         lines <- gsub("&gt;", ">", lines, fixed = TRUE)
+        lines <- gsub("&amp;", "&", lines, fixed = TRUE)
         lines
       }
 
@@ -613,7 +622,7 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
           style = "white-space: pre-wrap;",
           htmltools::htmlEscape(code_text)
         )
-
+        
         shiny::tagList(
           shiny::div(
             class = "d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3",
@@ -637,11 +646,22 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
         },
         contentType = "text/plain",
         content = function(file) {
-          code_lines <- prepare_code_lines_for_export(build_analysis_code())
+          # Rebuild the code lines freshly (unescaped)
+          code_lines <- build_analysis_code()
           shiny::req(code_lines)
+          
+          # Decode any escaped HTML entities just in case
+          code_lines <- gsub("&lt;", "<", code_lines, fixed = TRUE)
+          code_lines <- gsub("&gt;", ">", code_lines, fixed = TRUE)
+          code_lines <- gsub("&amp;", "&", code_lines, fixed = TRUE)
+          
+          # Write to file
           writeLines(code_lines, con = file, useBytes = TRUE)
         }
       )
+      
+      
+      
 
       output$download_data <- shiny::downloadHandler(
         filename = function() {
@@ -681,3 +701,6 @@ mod_report_server <- function(id, processed_data, analysis_result, settings, ana
     }
   )
 }
+
+
+

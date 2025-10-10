@@ -5,6 +5,6 @@ account: biosoft
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15695457
-bundleId: 11008105
+bundleId: 11016541
 url: https://biosoft.shinyapps.io/mvn-shiny-app/
 version: 1
