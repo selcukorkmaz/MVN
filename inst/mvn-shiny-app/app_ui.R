@@ -1,5 +1,6 @@
 app_ui <- function(request) {
   bslib::page_navbar(
+    id = "main_nav",
     title = "MVN Shiny App",
     theme = bslib::bs_theme(
       version = 5,

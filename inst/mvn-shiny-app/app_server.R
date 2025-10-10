@@ -25,6 +25,11 @@ app_server <- function(input, output, session) {
 
   mod_about_server("about")
 
+  shiny::observeEvent(analysis_settings$run_analysis(), {
+    shiny::req(analysis_settings$run_analysis() > 0)
+    bslib::nav_select(id = "main_nav", selected = "Results")
+  }, ignoreNULL = TRUE)
+
   observeEvent(data_prep$processed_data(), {
     prepared <- data_prep$processed_data()
     if (!is.null(prepared)) {
